@@ -1,0 +1,5 @@
+Analyzing Hesapix_app-main...                                   
+
+  error - This requires the 'dot-shorthands' language feature to be enabled - lib\main.dart:31:22 - experiment_not_enabled
+  error - This requires the 'dot-shorthands' language feature to be enabled - lib\main.dart:105:30 - experiment_not_enabled
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "684687747071",
+    "project_id": "hesapix-6161",
+    "storage_bucket": "hesapix-6161.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684687747071:android:13ad8d2398ff984e8229ca",
+        "android_client_info": {
+          "package_name": "com.example.hesapix_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCt-wgpts9Y9Y9jkB32HlzIU8wG52Idpts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
