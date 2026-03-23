@@ -53,4 +53,21 @@ class UrunService {
       transaction.update(urunRef, {'stok': yeniStok});
     });
   }
+
+  // Stok Artırma (Ürün alış faturası işlendiğinde çağrılacak)
+  Future<void> increaseStockByUrunId(int urunId, int miktar) async {
+    QuerySnapshot query = await _db
+        .collection('urunler')
+        .where('urun_id', isEqualTo: urunId)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      DocumentSnapshot doc = query.docs.first;
+      int mevcutStok = doc.get('stok') ?? 0;
+      int yeniStok = mevcutStok + miktar;
+
+      await _db.collection('urunler').doc(doc.id).update({'stok': yeniStok});
+    }
+  }
 }

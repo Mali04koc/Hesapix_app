@@ -83,4 +83,38 @@ class SiparisService {
             .map((doc) => Siparis.fromMap(doc.data(), doc.id))
             .toList());
   }
+
+  // Belirli bir siparişin borcunu ödeme
+  // Ödenen miktar siparişe işlenir. Eğer odenenTutar >= toplamTutar olursa odendi = true olur.
+  // Bu işlem sonucunda Müşterinin eksilen borcu musteri_borc üzerinden düşülür.
+  Future<void> paySiparisDebt(String siparisDocId, double odenenMiktar) async {
+    if (odenenMiktar <= 0) return;
+
+    DocumentSnapshot siparisDoc = await _db.collection('siparisler').doc(siparisDocId).get();
+    
+    if (siparisDoc.exists) {
+      Siparis siparis = Siparis.fromMap(siparisDoc.data() as Map<String, dynamic>, siparisDoc.id);
+
+      // Sadece kalan borcu kadar ödeme yapılabilir. (Fazladan ödeme engellemesi)
+      double kalanSiparisBorcu = siparis.toplamTutar - siparis.odenenTutar;
+      if (kalanSiparisBorcu <= 0) return; // Zaten ödenmiş
+
+      double gerceklesecekOdeme = odenenMiktar;
+      if (gerceklesecekOdeme > kalanSiparisBorcu) {
+        gerceklesecekOdeme = kalanSiparisBorcu;
+      }
+
+      double yeniOdenenTutar = siparis.odenenTutar + gerceklesecekOdeme;
+      bool yeniOdendiDurumu = (siparis.toplamTutar - yeniOdenenTutar) <= 0;
+
+      // Siparişi güncelle
+      await _db.collection('siparisler').doc(siparis.id).update({
+        'odenen_tutar': yeniOdenenTutar,
+        'odendi': yeniOdendiDurumu,
+      });
+
+      // Müşterinin toplam borcundan bu miktarı düş!!! (Eksi bakiye vererek addBorc kullanabiliriz)
+      await _musteriService.addBorcToMusteriByMusteriId(siparis.musteriId, -gerceklesecekOdeme);
+    }
+  }
 }
