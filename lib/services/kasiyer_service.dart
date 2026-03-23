@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/kasiyer_model.dart';
 
-class FirestoreService {
+class KasiyerService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // --- KASİYER İŞLEMLERİ ---
