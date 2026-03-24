@@ -1,8 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:hesapix_app/app_routes.dart';
 import 'package:hesapix_app/firebase_options.dart';
-import 'package:hesapix_app/models/kasiyer_model.dart';
-import 'package:hesapix_app/services/kasiyer_service.dart';
+import 'package:hesapix_app/pages/admin_home_page.dart';
+import 'package:hesapix_app/pages/forgot_password_page.dart';
+import 'package:hesapix_app/pages/kasiyer_home_page.dart';
+import 'package:hesapix_app/pages/login_page.dart';
+import 'package:hesapix_app/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,14 +26,17 @@ class MyApp extends StatelessWidget {
       title: 'Hesapix App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4F46E5)),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Hesapix Uygulaması - Firebase Hazır!'),
-        ),
-      ),
+      initialRoute: AppRoutes.splash,
+      routes: {
+        AppRoutes.splash: (_) => const SplashPage(),
+        AppRoutes.login: (_) => const LoginPage(),
+        AppRoutes.adminHome: (_) => const AdminHomePage(),
+        AppRoutes.kasiyerHome: (_) => const KasiyerHomePage(),
+        AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
+      },
     );
   }
 }
