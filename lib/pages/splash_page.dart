@@ -25,7 +25,13 @@ class _SplashPageState extends State<SplashPage> {
       return;
     }
 
-    if (user.role == 'Admin') {
+    final role = user.role
+        .trim()
+        .toLowerCase()
+        .replaceAll('ı', 'i')
+        .replaceAll('İ', 'i')
+        .replaceAll(' ', '');
+    if (role == 'admin') {
       Navigator.of(context).pushReplacementNamed(AppRoutes.adminHome);
     } else {
       Navigator.of(context).pushReplacementNamed(AppRoutes.kasiyerHome);

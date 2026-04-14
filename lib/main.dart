@@ -5,8 +5,11 @@ import 'package:hesapix_app/firebase_options.dart';
 import 'package:hesapix_app/pages/admin_home_page.dart';
 import 'package:hesapix_app/pages/forgot_password_page.dart';
 import 'package:hesapix_app/pages/kasiyer_home_page.dart';
+import 'package:hesapix_app/pages/kullanici_yonetimi_page.dart';
 import 'package:hesapix_app/pages/login_page.dart';
+import 'package:hesapix_app/pages/module_page.dart';
 import 'package:hesapix_app/pages/splash_page.dart';
+import 'package:hesapix_app/pages/stok_hareket_gecmisi_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +39,17 @@ class MyApp extends StatelessWidget {
         AppRoutes.adminHome: (_) => const AdminHomePage(),
         AppRoutes.kasiyerHome: (_) => const KasiyerHomePage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
+        AppRoutes.fiyatGor: (_) => const ModulePage(title: 'Fiyat Gör'),
+        AppRoutes.stokYonetimi: (_) => const ModulePage(title: 'Stok Yönetimi'),
+        AppRoutes.satisFaturasi: (_) => const ModulePage(title: 'Satış Faturası'),
+        AppRoutes.alisFaturasi: (_) => const ModulePage(title: 'Alış Faturası'),
+        AppRoutes.cariHesapYonetimi: (_) =>
+            const ModulePage(title: 'Cari Hesap Yönetimi'),
+        AppRoutes.raporlar: (_) => const ModulePage(title: 'Raporlar'),
+        AppRoutes.kullaniciYonetimi: (_) => const KullaniciYonetimiPage(),
+        AppRoutes.finansYonetimi: (_) =>
+            const ModulePage(title: 'Finans Yönetimi'),
+        AppRoutes.stokHareketGecmisi: (_) => const StokHareketGecmisiPage(),
       },
     );
   }

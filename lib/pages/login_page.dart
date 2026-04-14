@@ -48,8 +48,15 @@ class _LoginPageState extends State<LoginPage> {
       await SessionService().save(user, rememberMe: _rememberMe);
       if (!mounted) return;
 
-      final route =
-          (user.role == 'Admin') ? AppRoutes.adminHome : AppRoutes.kasiyerHome;
+      final normalizedRole = user.role
+          .trim()
+          .toLowerCase()
+          .replaceAll('ı', 'i')
+          .replaceAll('İ', 'i')
+          .replaceAll(' ', '');
+      final route = normalizedRole == 'admin'
+          ? AppRoutes.adminHome
+          : AppRoutes.kasiyerHome;
       Navigator.of(context).pushNamedAndRemoveUntil(route, (_) => false);
     } on AuthException catch (e) {
       if (!mounted) return;
@@ -118,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Kullanıcı Adı veya E-posta',
+                        hintText: 'E-posta',
                         hintStyle: TextStyle(
                           color: Colors.grey.shade500,
                           fontWeight: FontWeight.w400,
