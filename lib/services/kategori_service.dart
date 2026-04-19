@@ -6,7 +6,27 @@ class KategoriService {
 
   // Yeni Kategori Ekleme
   Future<void> addKategori(Kategori kategori) async {
-    await _db.collection('kategoriler').add(kategori.toMap());
+    QuerySnapshot query = await _db
+        .collection('kategoriler')
+        .orderBy('kategori_id', descending: true)
+        .limit(1)
+        .get();
+
+    int nextId = 1;
+    if (query.docs.isNotEmpty) {
+      final data = query.docs.first.data() as Map<String, dynamic>;
+      final currentMax = data['kategori_id'] as int? ?? 0;
+      nextId = currentMax + 1;
+    }
+
+    final newKategori = Kategori(
+      id: kategori.id,
+      kategoriId: nextId,
+      isim: kategori.isim,
+      adet: kategori.adet,
+    );
+
+    await _db.collection('kategoriler').add(newKategori.toMap());
   }
 
   // Tüm Kategorileri Getirme
