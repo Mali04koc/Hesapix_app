@@ -6,7 +6,32 @@ class UrunService {
 
   // Yeni Ürün Ekleme
   Future<void> addUrun(Urun urun) async {
-    await _db.collection('urunler').add(urun.toMap());
+    QuerySnapshot query = await _db
+        .collection('urunler')
+        .orderBy('urun_id', descending: true)
+        .limit(1)
+        .get();
+
+    int nextId = 1;
+    if (query.docs.isNotEmpty) {
+      final data = query.docs.first.data() as Map<String, dynamic>;
+      final currentMax = data['urun_id'] as int? ?? 0;
+      nextId = currentMax + 1;
+    }
+
+    final newUrun = Urun(
+      id: urun.id,
+      urunId: nextId,
+      isim: urun.isim,
+      alisFiyat: urun.alisFiyat,
+      satisFiyat: urun.satisFiyat,
+      stok: urun.stok,
+      barkod: urun.barkod,
+      gorsel: urun.gorsel,
+      kategoriId: urun.kategoriId,
+    );
+
+    await _db.collection('urunler').add(newUrun.toMap());
   }
 
   // Tüm Ürünleri Getirme

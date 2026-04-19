@@ -9,8 +9,9 @@ import 'package:hesapix_app/pages/kullanici_yonetimi_page.dart';
 import 'package:hesapix_app/pages/login_page.dart';
 import 'package:hesapix_app/pages/module_page.dart';
 import 'package:hesapix_app/pages/splash_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hesapix_app/pages/stok_hareket_gecmisi_page.dart';
-
+import 'package:hesapix_app/pages/stok_yonetimi/stok_yonetimi_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -32,6 +33,15 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4F46E5)),
         useMaterial3: true,
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('tr', 'TR'),
+        Locale('en', 'US'),
+      ],
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (_) => const SplashPage(),
@@ -40,7 +50,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.kasiyerHome: (_) => const KasiyerHomePage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.fiyatGor: (_) => const ModulePage(title: 'Fiyat Gör'),
-        AppRoutes.stokYonetimi: (_) => const ModulePage(title: 'Stok Yönetimi'),
+        AppRoutes.stokYonetimi: (_) => const StokYonetimiPage(),
         AppRoutes.satisFaturasi: (_) => const ModulePage(title: 'Satış Faturası'),
         AppRoutes.alisFaturasi: (_) => const ModulePage(title: 'Alış Faturası'),
         AppRoutes.cariHesapYonetimi: (_) =>
