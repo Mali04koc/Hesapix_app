@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:hesapix_app/app_routes.dart';
 import 'package:hesapix_app/models/app_user_model.dart';
 import 'package:hesapix_app/models/auth_user.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/dialogs/confirm_dialog.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/dialogs/user_dialog.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_card.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_filters.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_stats_row.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_table.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_table_skeleton.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/dialogs/confirm_dialog.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/dialogs/user_dialog.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_card.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_filters.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_stats_row.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_table.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_table_skeleton.dart';
 import 'package:hesapix_app/services/auth_service.dart';
 import 'package:hesapix_app/services/session_service.dart';
 import 'package:hesapix_app/services/user_service.dart';
@@ -481,13 +481,24 @@ class _KullaniciYonetimiPageState extends State<KullaniciYonetimiPage> {
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Kullanıcı Yönetimi',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: HesapixColors.primary,
-                ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back, color: HesapixColors.primary),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Kullanıcı Yönetimi',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: HesapixColors.primary,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               const Text(
@@ -525,17 +536,28 @@ class _KullaniciYonetimiPageState extends State<KullaniciYonetimiPage> {
         : Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Kullanıcı Yönetimi',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: HesapixColors.primary,
-                      ),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back, color: HesapixColors.primary),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Kullanıcı Yönetimi',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: HesapixColors.primary,
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 4),
                     Text(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
+import 'package:hesapix_app/models/tedarikci_model.dart';
 import 'package:hesapix_app/services/kategori_service.dart';
 import 'package:hesapix_app/services/urun_service.dart';
+import 'package:hesapix_app/services/tedarikci_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
-import 'package:hesapix_app/pages/stok_yonetimi/dialogs/kategori_dialog.dart';
-import 'package:hesapix_app/pages/stok_yonetimi/dialogs/urun_dialog.dart';
+import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/kategori_dialog.dart';
+import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/urun_dialog.dart';
 
 class StokYonetimiPage extends StatefulWidget {
   const StokYonetimiPage({super.key});
@@ -18,8 +20,13 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
   late TabController _tabController;
   final KategoriService _kategoriService = KategoriService();
   final UrunService _urunService = UrunService();
+  final TedarikciService _tedarikciService = TedarikciService();
 
   List<Kategori> _kategoriler = [];
+  List<Tedarikci> _tedarikciler = [];
+  String _urunSearchQuery = '';
+  final TextEditingController _urunSearchCtrl = TextEditingController();
+  late Stream<List<Urun>> _urunlerStream;
 
   @override
   void initState() {
@@ -28,10 +35,15 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
     _kategoriService.getKategoriler().listen((data) {
       if (mounted) setState(() => _kategoriler = data);
     });
+    _tedarikciService.getTedarikciler().listen((data) {
+      if (mounted) setState(() => _tedarikciler = data);
+    });
+    _urunlerStream = _urunService.getUrunler();
   }
 
   @override
   void dispose() {
+    _urunSearchCtrl.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -86,6 +98,7 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
       context: context,
       builder: (context) => UrunDialog(
         kategoriler: _kategoriler,
+        tedarikciler: _tedarikciler,
         onSubmit: (data) async {
           final yeniUrun = Urun(
             urunId: 0,
@@ -96,6 +109,8 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
             barkod: data.barkod,
             kategoriId: data.kategoriId,
             gorsel: data.gorselUrl,
+            urunKodu: data.urunKodu,
+            tedarikciKodu: data.tedarikciKodu,
           );
           await _urunService.addUrun(yeniUrun);
           
@@ -119,6 +134,7 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
       builder: (context) => UrunDialog(
         existingUrun: u,
         kategoriler: _kategoriler,
+        tedarikciler: _tedarikciler,
         onSubmit: (data) async {
           final guncelUrun = Urun(
             id: u.id,
@@ -130,6 +146,8 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
             barkod: data.barkod,
             kategoriId: data.kategoriId,
             gorsel: data.gorselUrl,
+            urunKodu: data.urunKodu,
+            tedarikciKodu: data.tedarikciKodu,
           );
           await _urunService.updateUrun(guncelUrun);
           
@@ -239,6 +257,8 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
                 _detailRow('Stok Adedi:', '${u.stok}'),
                 _detailRow('Alış Fiyatı:', '₺${u.alisFiyat}'),
                 _detailRow('Satış Fiyatı:', '₺${u.satisFiyat}'),
+                _detailRow('Ürün Kodu:', u.urunKodu),
+                _detailRow('Tedarikçi Kodu:', u.tedarikciKodu),
                 _detailRow('Barkod:', u.barkod),
               ],
             ),
@@ -346,66 +366,109 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
   }
 
   Widget _buildUrunlerTab() {
-    return StreamBuilder<List<Urun>>(
-      stream: _urunService.getUrunler(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final urunler = snapshot.data ?? [];
-        if (urunler.isEmpty) {
-          return const Center(child: Text("Henüz ürün yok."));
-        }
-        
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: urunler.length,
-          itemBuilder: (context, index) {
-            final u = urunler[index];
-            final kat = _kategoriler.where((k) => k.id == u.kategoriId).firstOrNull;
-            
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                onTap: () => _showUrunDetayDialog(u, kat?.isim),
-                leading: u.gorsel.isNotEmpty 
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        u.gorsel, 
-                        width: 50, height: 50, fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 50, height: 50, 
-                          decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      width: 50, height: 50, 
-                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.inventory, color: Colors.grey),
-                    ),
-                title: Text(u.isim, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.grey),
-                      onPressed: () => _urunDuzenleDialog(u),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: HesapixColors.danger),
-                      onPressed: () => _urunSilDialog(u),
-                    ),
-                  ],
-                ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _urunSearchCtrl,
+            decoration: InputDecoration(
+              hintText: 'İsim veya Ürün Kodu ile Ara',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
               ),
-            );
-          },
-        );
-      },
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: HesapixColors.primary, width: 2),
+              ),
+            ),
+            onChanged: (val) {
+              setState(() {
+                _urunSearchQuery = val;
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<Urun>>(
+            stream: _urunlerStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final urunler = snapshot.data ?? [];
+              
+              final filteredUrunler = urunler.where((u) {
+                final query = _urunSearchQuery.toLowerCase();
+                return u.isim.toLowerCase().contains(query) ||
+                       u.urunKodu.toLowerCase().contains(query);
+              }).toList();
+
+              if (filteredUrunler.isEmpty) {
+                return const Center(child: Text("Sonuç bulunamadı."));
+              }
+              
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredUrunler.length,
+                itemBuilder: (context, index) {
+                  final u = filteredUrunler[index];
+                  final kat = _kategoriler.where((k) => k.id == u.kategoriId).firstOrNull;
+                  
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      onTap: () => _showUrunDetayDialog(u, kat?.isim),
+                      leading: u.gorsel.isNotEmpty 
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              u.gorsel, 
+                              width: 50, height: 50, fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 50, height: 50, 
+                                decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
+                                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            width: 50, height: 50, 
+                            decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
+                            child: const Icon(Icons.inventory, color: Colors.grey),
+                          ),
+                      title: Text(u.isim, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.grey),
+                            onPressed: () => _urunDuzenleDialog(u),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: HesapixColors.danger),
+                            onPressed: () => _urunSilDialog(u),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

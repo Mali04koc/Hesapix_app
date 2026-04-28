@@ -8,6 +8,8 @@ class Urun {
   final String barkod;
   final String gorsel;
   final String kategoriId; // Kategori tablosundaki doküman ID'si 
+  final String urunKodu;
+  final String tedarikciKodu;
 
   Urun({
     this.id,
@@ -19,6 +21,8 @@ class Urun {
     required this.barkod,
     required this.gorsel,
     required this.kategoriId,
+    required this.urunKodu,
+    required this.tedarikciKodu,
   });
 
   Map<String, dynamic> toMap() {
@@ -31,6 +35,8 @@ class Urun {
       'barkod': barkod,
       'gorsel': gorsel,
       'kategori_id': kategoriId,
+      'urun_kodu': urunKodu,
+      'tedarikci_kodu': tedarikciKodu,
     };
   }
 
@@ -45,6 +51,8 @@ class Urun {
       barkod: map['barkod'] ?? '',
       gorsel: map['gorsel'] ?? '',
       kategoriId: map['kategori_id'] ?? '',
+      urunKodu: map['urun_kodu'] ?? '',
+      tedarikciKodu: map['tedarikci_kodu'] ?? '',
     );
   }
 }

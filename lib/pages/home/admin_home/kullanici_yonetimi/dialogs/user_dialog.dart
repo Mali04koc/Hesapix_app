@@ -3,7 +3,7 @@ import 'package:hesapix_app/models/app_user_model.dart';
 import 'package:hesapix_app/services/auth_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/utils/firestore_user_fields.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/dialogs/confirm_dialog.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/dialogs/confirm_dialog.dart';
 
 class UserDialogResult {
   const UserDialogResult({

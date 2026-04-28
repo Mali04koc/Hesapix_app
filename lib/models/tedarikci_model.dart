@@ -5,6 +5,9 @@ class Tedarikci {
   final String telefon;
   final String adres;
   final double borc; // Bizim tedarikçiye olan borcumuz
+  final String tedarikciKodu;
+  final int taksit;
+  final double aylikOdeme;
 
   Tedarikci({
     this.id,
@@ -13,6 +16,9 @@ class Tedarikci {
     required this.telefon,
     required this.adres,
     this.borc = 0.0,
+    required this.tedarikciKodu,
+    required this.taksit,
+    this.aylikOdeme = 0.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -22,6 +28,9 @@ class Tedarikci {
       'telefon': telefon,
       'adres': adres,
       'borc': borc,
+      'tedarikci_kodu': tedarikciKodu,
+      'taksit': taksit,
+      'aylik_odeme': aylikOdeme,
     };
   }
 
@@ -33,6 +42,9 @@ class Tedarikci {
       telefon: map['telefon'] ?? '',
       adres: map['adres'] ?? '',
       borc: (map['borc'] ?? 0).toDouble(),
+      tedarikciKodu: map['tedarikci_kodu'] ?? '',
+      taksit: map['taksit'] ?? 0,
+      aylikOdeme: (map['aylik_odeme'] ?? 0).toDouble(),
     );
   }
 }

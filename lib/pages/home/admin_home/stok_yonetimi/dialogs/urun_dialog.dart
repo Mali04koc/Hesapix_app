@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hesapix_app/models/urun_model.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
+import 'package:hesapix_app/models/tedarikci_model.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 
 class UrunDialogData {
@@ -11,6 +13,8 @@ class UrunDialogData {
   final String barkod;
   final String kategoriId;
   final String gorselUrl;
+  final String urunKodu;
+  final String tedarikciKodu;
 
   UrunDialogData({
     required this.isim,
@@ -20,6 +24,8 @@ class UrunDialogData {
     required this.barkod,
     required this.kategoriId,
     required this.gorselUrl,
+    required this.urunKodu,
+    required this.tedarikciKodu,
   });
 }
 
@@ -28,11 +34,13 @@ class UrunDialog extends StatefulWidget {
     super.key,
     this.existingUrun,
     required this.kategoriler,
+    required this.tedarikciler,
     required this.onSubmit,
   });
 
   final Urun? existingUrun;
   final List<Kategori> kategoriler;
+  final List<Tedarikci> tedarikciler;
   final Future<void> Function(UrunDialogData data) onSubmit;
 
   @override
@@ -46,6 +54,9 @@ class _UrunDialogState extends State<UrunDialog> {
   late TextEditingController _satisFiyatCtrl;
   late TextEditingController _stokCtrl;
   late TextEditingController _gorselUrlCtrl;
+  late TextEditingController _urunKoduCtrl;
+  late TextEditingController _tedarikciKoduCtrl;
+  late TextEditingController _barkodCtrl;
 
   String? _selectedKategoriId;
   bool _isLoading = false;
@@ -59,6 +70,9 @@ class _UrunDialogState extends State<UrunDialog> {
     _satisFiyatCtrl = TextEditingController(text: u?.satisFiyat.toString() ?? '');
     _stokCtrl = TextEditingController(text: u?.stok.toString() ?? '');
     _gorselUrlCtrl = TextEditingController(text: u?.gorsel ?? '');
+    _urunKoduCtrl = TextEditingController(text: u?.urunKodu ?? '');
+    _tedarikciKoduCtrl = TextEditingController(text: u?.tedarikciKodu ?? '');
+    _barkodCtrl = TextEditingController(text: u?.barkod ?? '');
     
     if (u != null) {
       if (widget.kategoriler.any((k) => k.id == u.kategoriId)) {
@@ -78,6 +92,9 @@ class _UrunDialogState extends State<UrunDialog> {
     _satisFiyatCtrl.dispose();
     _stokCtrl.dispose();
     _gorselUrlCtrl.dispose();
+    _urunKoduCtrl.dispose();
+    _tedarikciKoduCtrl.dispose();
+    _barkodCtrl.dispose();
     super.dispose();
   }
 
@@ -94,16 +111,16 @@ class _UrunDialogState extends State<UrunDialog> {
 
     try {
 
-      String finalBarkod = widget.existingUrun?.barkod ?? DateTime.now().millisecondsSinceEpoch.toString();
-
       final data = UrunDialogData(
         isim: _isimCtrl.text.trim(),
         alisFiyat: double.tryParse(_alisFiyatCtrl.text.trim()) ?? 0.0,
         satisFiyat: double.tryParse(_satisFiyatCtrl.text.trim()) ?? 0.0,
         stok: int.tryParse(_stokCtrl.text.trim()) ?? 0,
-        barkod: finalBarkod,
+        barkod: _barkodCtrl.text.trim(),
         kategoriId: _selectedKategoriId!,
         gorselUrl: _gorselUrlCtrl.text.trim(),
+        urunKodu: _urunKoduCtrl.text.trim(),
+        tedarikciKodu: _tedarikciKoduCtrl.text.trim(),
       );
 
       await widget.onSubmit(data);
@@ -158,6 +175,73 @@ class _UrunDialogState extends State<UrunDialog> {
                   validator: (v) => v == null || v.trim().isEmpty ? 'Boş bırakılamaz' : null,
                 ),
                 const SizedBox(height: 16),
+                TextFormField(
+                  controller: _urunKoduCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Ürün Kodu',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Boş bırakılamaz' : null,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Autocomplete<Tedarikci>(
+                        displayStringForOption: (Tedarikci option) => option.tedarikciKodu,
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text == '') {
+                            return widget.tedarikciler;
+                          }
+                          return widget.tedarikciler.where((Tedarikci option) {
+                            return option.tedarikciKodu.contains(textEditingValue.text);
+                          });
+                        },
+                        onSelected: (Tedarikci selection) {
+                          _tedarikciKoduCtrl.text = selection.tedarikciKodu;
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          if (_tedarikciKoduCtrl.text.isNotEmpty && textEditingController.text.isEmpty) {
+                            textEditingController.text = _tedarikciKoduCtrl.text;
+                          }
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: 'Tedarikçi Kodu',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Boş bırakılamaz' : null,
+                            onChanged: (v) {
+                              _tedarikciKoduCtrl.text = v;
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _barkodCtrl,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: 'Barkod',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Boş bırakılamaz';
+                          if (v.trim().length > 13) return 'En fazla 13 rakam girilebilir';
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -196,24 +280,46 @@ class _UrunDialogState extends State<UrunDialog> {
                   validator: (v) => v == null || v.trim().isEmpty ? 'Giriniz' : null,
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedKategoriId,
-                  decoration: InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: widget.kategoriler.map((k) {
-                    return DropdownMenuItem(
-                      value: k.id,
-                      child: Text(k.isim),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedKategoriId = val;
+                Autocomplete<Kategori>(
+                  displayStringForOption: (Kategori option) => option.isim,
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text == '') {
+                      return widget.kategoriler;
+                    }
+                    return widget.kategoriler.where((Kategori option) {
+                      return option.isim.toLowerCase().contains(textEditingValue.text.toLowerCase());
                     });
                   },
-                  validator: (v) => v == null ? 'Kategori seçiniz' : null,
+                  onSelected: (Kategori selection) {
+                    setState(() {
+                      _selectedKategoriId = selection.id;
+                    });
+                  },
+                  fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                    if (_selectedKategoriId != null && textEditingController.text.isEmpty) {
+                      final existingCat = widget.kategoriler.where((k) => k.id == _selectedKategoriId).firstOrNull;
+                      if (existingCat != null) {
+                        textEditingController.text = existingCat.isim;
+                      }
+                    }
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        labelText: 'Kategori Seç (Yazarak Arayın)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      validator: (v) {
+                        if (_selectedKategoriId == null) return 'Lütfen listeden kategori seçiniz';
+                        return null;
+                      },
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedKategoriId = null;
+                        });
+                      },
+                    );
+                  },
                 ),
               ],
             ),

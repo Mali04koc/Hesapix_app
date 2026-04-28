@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/app_user_model.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi/widgets/user_badges.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/widgets/user_badges.dart';
 
 class UserTable extends StatelessWidget {
   const UserTable({

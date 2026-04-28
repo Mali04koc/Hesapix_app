@@ -29,6 +29,8 @@ class UrunService {
       barkod: urun.barkod,
       gorsel: urun.gorsel,
       kategoriId: urun.kategoriId,
+      urunKodu: urun.urunKodu,
+      tedarikciKodu: urun.tedarikciKodu,
     );
 
     await _db.collection('urunler').add(newUrun.toMap());

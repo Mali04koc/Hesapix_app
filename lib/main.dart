@@ -2,16 +2,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/app_routes.dart';
 import 'package:hesapix_app/firebase_options.dart';
-import 'package:hesapix_app/pages/admin_home_page.dart';
-import 'package:hesapix_app/pages/forgot_password_page.dart';
-import 'package:hesapix_app/pages/kasiyer_home_page.dart';
-import 'package:hesapix_app/pages/kullanici_yonetimi_page.dart';
-import 'package:hesapix_app/pages/login_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/admin_home_page.dart';
+import 'package:hesapix_app/pages/login/forgot_password_page.dart';
+import 'package:hesapix_app/pages/home/kasiyer_home/kasiyer_home_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/kullanici_yonetimi/kullanici_yonetimi_page.dart';
+import 'package:hesapix_app/pages/login/login_page.dart';
 import 'package:hesapix_app/pages/module_page.dart';
 import 'package:hesapix_app/pages/splash_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hesapix_app/pages/stok_hareket_gecmisi_page.dart';
-import 'package:hesapix_app/pages/stok_yonetimi/stok_yonetimi_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/stok_yonetimi_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/tedarikci_yonetimi/tedarikci_yonetimi_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.finansYonetimi: (_) =>
             const ModulePage(title: 'Finans Yönetimi'),
         AppRoutes.stokHareketGecmisi: (_) => const StokHareketGecmisiPage(),
+        AppRoutes.tedarikciYonetimi: (_) => const TedarikciYonetimiPage(),
       },
     );
   }
