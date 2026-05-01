@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hesapix_app/models/urun_model.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
-import 'package:hesapix_app/models/tedarikci_model.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 
 class UrunDialogData {
@@ -14,7 +13,6 @@ class UrunDialogData {
   final String kategoriId;
   final String gorselUrl;
   final String urunKodu;
-  final String tedarikciKodu;
 
   UrunDialogData({
     required this.isim,
@@ -25,7 +23,6 @@ class UrunDialogData {
     required this.kategoriId,
     required this.gorselUrl,
     required this.urunKodu,
-    required this.tedarikciKodu,
   });
 }
 
@@ -34,13 +31,11 @@ class UrunDialog extends StatefulWidget {
     super.key,
     this.existingUrun,
     required this.kategoriler,
-    required this.tedarikciler,
     required this.onSubmit,
   });
 
   final Urun? existingUrun;
   final List<Kategori> kategoriler;
-  final List<Tedarikci> tedarikciler;
   final Future<void> Function(UrunDialogData data) onSubmit;
 
   @override
@@ -55,7 +50,6 @@ class _UrunDialogState extends State<UrunDialog> {
   late TextEditingController _stokCtrl;
   late TextEditingController _gorselUrlCtrl;
   late TextEditingController _urunKoduCtrl;
-  late TextEditingController _tedarikciKoduCtrl;
   late TextEditingController _barkodCtrl;
 
   String? _selectedKategoriId;
@@ -71,7 +65,6 @@ class _UrunDialogState extends State<UrunDialog> {
     _stokCtrl = TextEditingController(text: u?.stok.toString() ?? '');
     _gorselUrlCtrl = TextEditingController(text: u?.gorsel ?? '');
     _urunKoduCtrl = TextEditingController(text: u?.urunKodu ?? '');
-    _tedarikciKoduCtrl = TextEditingController(text: u?.tedarikciKodu ?? '');
     _barkodCtrl = TextEditingController(text: u?.barkod ?? '');
     
     if (u != null) {
@@ -93,7 +86,6 @@ class _UrunDialogState extends State<UrunDialog> {
     _stokCtrl.dispose();
     _gorselUrlCtrl.dispose();
     _urunKoduCtrl.dispose();
-    _tedarikciKoduCtrl.dispose();
     _barkodCtrl.dispose();
     super.dispose();
   }
@@ -120,7 +112,6 @@ class _UrunDialogState extends State<UrunDialog> {
         kategoriId: _selectedKategoriId!,
         gorselUrl: _gorselUrlCtrl.text.trim(),
         urunKodu: _urunKoduCtrl.text.trim(),
-        tedarikciKodu: _tedarikciKoduCtrl.text.trim(),
       );
 
       await widget.onSubmit(data);
@@ -184,62 +175,22 @@ class _UrunDialogState extends State<UrunDialog> {
                   validator: (v) => v == null || v.trim().isEmpty ? 'Boş bırakılamaz' : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Autocomplete<Tedarikci>(
-                        displayStringForOption: (Tedarikci option) => option.tedarikciKodu,
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          if (textEditingValue.text == '') {
-                            return widget.tedarikciler;
-                          }
-                          return widget.tedarikciler.where((Tedarikci option) {
-                            return option.tedarikciKodu.contains(textEditingValue.text);
-                          });
-                        },
-                        onSelected: (Tedarikci selection) {
-                          _tedarikciKoduCtrl.text = selection.tedarikciKodu;
-                        },
-                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                          if (_tedarikciKoduCtrl.text.isNotEmpty && textEditingController.text.isEmpty) {
-                            textEditingController.text = _tedarikciKoduCtrl.text;
-                          }
-                          return TextFormField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
-                            decoration: InputDecoration(
-                              labelText: 'Tedarikçi Kodu',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Boş bırakılamaz' : null,
-                            onChanged: (v) {
-                              _tedarikciKoduCtrl.text = v;
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _barkodCtrl,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.next,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Barkod',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Boş bırakılamaz';
-                          if (v.trim().length > 13) return 'En fazla 13 rakam girilebilir';
-                          return null;
-                        },
-                      ),
-                    ),
+                TextFormField(
+                  controller: _barkodCtrl,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
                   ],
+                  decoration: InputDecoration(
+                    labelText: 'Barkod',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Boş bırakılamaz';
+                    if (v.trim().length > 13) return 'En fazla 13 rakam girilebilir';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 Row(

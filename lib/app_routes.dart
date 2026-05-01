@@ -13,6 +13,6 @@ class AppRoutes {
   static const kullaniciYonetimi = '/kullanici-yonetimi';
   static const finansYonetimi = '/finans-yonetimi';
   static const stokHareketGecmisi = '/stok-hareket-gecmisi';
-  static const tedarikciYonetimi = '/tedarikci-yonetimi';
+  static const odemeIslemleri = '/odeme-islemleri';
 }
 

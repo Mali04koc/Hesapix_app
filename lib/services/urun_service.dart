@@ -97,4 +97,17 @@ class UrunService {
       await _db.collection('urunler').doc(doc.id).update({'stok': yeniStok});
     }
   }
+
+  // Ürün Arama
+  Future<List<Urun>> urunAra(String arama) async {
+    final query = arama.toLowerCase();
+    final snapshot = await _db.collection('urunler').get();
+    return snapshot.docs
+        .map((doc) => Urun.fromMap(doc.data(), doc.id))
+        .where((u) => 
+            u.isim.toLowerCase().contains(query) || 
+            u.urunKodu.toLowerCase().contains(query) ||
+            u.barkod.toLowerCase().contains(query))
+        .toList();
+  }
 }

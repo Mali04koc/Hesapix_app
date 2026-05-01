@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
-import 'package:hesapix_app/models/tedarikci_model.dart';
 import 'package:hesapix_app/services/kategori_service.dart';
 import 'package:hesapix_app/services/urun_service.dart';
-import 'package:hesapix_app/services/tedarikci_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/kategori_dialog.dart';
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/urun_dialog.dart';
@@ -20,10 +18,8 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
   late TabController _tabController;
   final KategoriService _kategoriService = KategoriService();
   final UrunService _urunService = UrunService();
-  final TedarikciService _tedarikciService = TedarikciService();
 
   List<Kategori> _kategoriler = [];
-  List<Tedarikci> _tedarikciler = [];
   String _urunSearchQuery = '';
   final TextEditingController _urunSearchCtrl = TextEditingController();
   late Stream<List<Urun>> _urunlerStream;
@@ -34,9 +30,6 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
     _tabController = TabController(length: 2, vsync: this);
     _kategoriService.getKategoriler().listen((data) {
       if (mounted) setState(() => _kategoriler = data);
-    });
-    _tedarikciService.getTedarikciler().listen((data) {
-      if (mounted) setState(() => _tedarikciler = data);
     });
     _urunlerStream = _urunService.getUrunler();
   }
@@ -98,7 +91,6 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
       context: context,
       builder: (context) => UrunDialog(
         kategoriler: _kategoriler,
-        tedarikciler: _tedarikciler,
         onSubmit: (data) async {
           final yeniUrun = Urun(
             urunId: 0,
@@ -110,7 +102,7 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
             kategoriId: data.kategoriId,
             gorsel: data.gorselUrl,
             urunKodu: data.urunKodu,
-            tedarikciKodu: data.tedarikciKodu,
+            tedarikciKodu: '',
           );
           await _urunService.addUrun(yeniUrun);
           
@@ -134,7 +126,6 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
       builder: (context) => UrunDialog(
         existingUrun: u,
         kategoriler: _kategoriler,
-        tedarikciler: _tedarikciler,
         onSubmit: (data) async {
           final guncelUrun = Urun(
             id: u.id,
@@ -147,7 +138,7 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
             kategoriId: data.kategoriId,
             gorsel: data.gorselUrl,
             urunKodu: data.urunKodu,
-            tedarikciKodu: data.tedarikciKodu,
+            tedarikciKodu: '',
           );
           await _urunService.updateUrun(guncelUrun);
           
@@ -258,7 +249,6 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
                 _detailRow('Alış Fiyatı:', '₺${u.alisFiyat}'),
                 _detailRow('Satış Fiyatı:', '₺${u.satisFiyat}'),
                 _detailRow('Ürün Kodu:', u.urunKodu),
-                _detailRow('Tedarikçi Kodu:', u.tedarikciKodu),
                 _detailRow('Barkod:', u.barkod),
               ],
             ),

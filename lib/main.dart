@@ -12,7 +12,10 @@ import 'package:hesapix_app/pages/splash_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hesapix_app/pages/stok_hareket_gecmisi_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/stok_yonetimi_page.dart';
-import 'package:hesapix_app/pages/home/admin_home/tedarikci_yonetimi/tedarikci_yonetimi_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/cari_yonetimi_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/odeme_islemleri/odeme_islemleri_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -50,18 +53,17 @@ class MyApp extends StatelessWidget {
         AppRoutes.adminHome: (_) => const AdminHomePage(),
         AppRoutes.kasiyerHome: (_) => const KasiyerHomePage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
-        AppRoutes.fiyatGor: (_) => const ModulePage(title: 'Fiyat Gör'),
+        AppRoutes.fiyatGor: (_) => const FiyatGorPage(),
         AppRoutes.stokYonetimi: (_) => const StokYonetimiPage(),
         AppRoutes.satisFaturasi: (_) => const ModulePage(title: 'Satış Faturası'),
         AppRoutes.alisFaturasi: (_) => const ModulePage(title: 'Alış Faturası'),
-        AppRoutes.cariHesapYonetimi: (_) =>
-            const ModulePage(title: 'Cari Hesap Yönetimi'),
+        AppRoutes.cariHesapYonetimi: (_) => const CariYonetimiPage(),
         AppRoutes.raporlar: (_) => const ModulePage(title: 'Raporlar'),
         AppRoutes.kullaniciYonetimi: (_) => const KullaniciYonetimiPage(),
         AppRoutes.finansYonetimi: (_) =>
             const ModulePage(title: 'Finans Yönetimi'),
         AppRoutes.stokHareketGecmisi: (_) => const StokHareketGecmisiPage(),
-        AppRoutes.tedarikciYonetimi: (_) => const TedarikciYonetimiPage(),
+        AppRoutes.odemeIslemleri: (_) => const OdemeIslemleriPage(),
       },
     );
   }

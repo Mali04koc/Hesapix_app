@@ -42,6 +42,7 @@ dependencies:
   firebase_storage: ^13.3.0
   flutter_localizations:
     sdk: flutter
+  mobile_scanner: ^5.1.1
 
 dev_dependencies:
   flutter_test:
