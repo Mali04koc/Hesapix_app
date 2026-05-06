@@ -14,7 +14,7 @@ class AdminHomePage extends StatelessWidget {
     _MenuItem(title: 'Ödeme İşlemleri', route: AppRoutes.odemeIslemleri, icon: Icons.payment),
     _MenuItem(title: 'Raporlar', route: AppRoutes.raporlar, icon: Icons.bar_chart),
     _MenuItem(title: 'Kullanıcılar', route: AppRoutes.kullaniciYonetimi, icon: Icons.manage_accounts),
-    _MenuItem(title: 'Stok Geçmişi', route: AppRoutes.stokHareketGecmisi, icon: Icons.history),
+
   ];
 
   @override

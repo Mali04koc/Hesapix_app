@@ -315,15 +315,17 @@ class _KullaniciYonetimiPageState extends State<KullaniciYonetimiPage> {
               stream: _userService.streamUsers(),
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _pageHeader(isNarrow: isNarrow),
-                        const SizedBox(height: 24),
-                        const UserTableSkeleton(),
-                      ],
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _pageHeader(isNarrow: isNarrow),
+                          const SizedBox(height: 24),
+                          UserTableSkeleton(isNarrow: isNarrow),
+                        ],
+                      ),
                     ),
                   );
                 }
