@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hesapix_app/models/app_user_model.dart';
 import 'package:hesapix_app/services/auth_service.dart';
@@ -41,21 +42,24 @@ class UserService {
     }
 
     UserCredential? cred;
+    FirebaseApp? secondaryApp;
     try {
-      cred = await _auth.createUserWithEmailAndPassword(
+      secondaryApp = await Firebase.initializeApp(
+        name: 'SecondaryApp_${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      
+      cred = await secondaryAuth.createUserWithEmailAndPassword(
         email: cleanEmail,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_mapAuthError(e.code));
-    }
 
-    final uid = cred.user?.uid;
-    if (uid == null) {
-      throw AuthException('Kullanıcı oluşturulamadı.');
-    }
+      final uid = cred.user?.uid;
+      if (uid == null) {
+        throw AuthException('Kullanıcı oluşturulamadı.');
+      }
 
-    try {
       await _users.doc(uid).set({
         'uid': uid,
         'ad_soyad': adSoyad.trim(),
@@ -65,12 +69,17 @@ class UserService {
         'son_giris_tarihi': null,
         'olusturulma_tarihi': FieldValue.serverTimestamp(),
       });
+      
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_mapAuthError(e.code));
     } catch (_) {
-      await cred.user?.delete();
+      if (cred != null) await cred.user?.delete();
       rethrow;
+    } finally {
+      if (secondaryApp != null) {
+        await secondaryApp.delete();
+      }
     }
-
-    await _auth.signOut();
   }
 
   Future<void> updateUser({
