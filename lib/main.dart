@@ -12,10 +12,16 @@ import 'package:hesapix_app/pages/splash_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/stok_yonetimi_page.dart';
-import 'package:hesapix_app/pages/home/admin_home/satıs_arayuz/satis_faturasi_cari_secim_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/satıs_arayuz/satis_faturasi_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/cari_yonetimi_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/odeme_islemleri/odeme_islemleri_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/raporlar/raporlar_dashboard_page.dart';
+
+import 'package:provider/provider.dart';
+import 'package:hesapix_app/services/satis_provider.dart';
+import 'package:hesapix_app/services/alis_provider.dart';
+import 'package:hesapix_app/pages/home/admin_home/alis_yonetimi/alis_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +29,15 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SatisProvider()),
+        ChangeNotifierProvider(create: (_) => AlisProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -56,10 +70,10 @@ class MyApp extends StatelessWidget {
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.fiyatGor: (_) => const FiyatGorPage(),
         AppRoutes.stokYonetimi: (_) => const StokYonetimiPage(),
-        AppRoutes.satisFaturasi: (_) => const SatisFaturasiCariSecimPage(),
-        AppRoutes.alisFaturasi: (_) => const ModulePage(title: 'Alış Faturası'),
+        AppRoutes.satisFaturasi: (_) => const SatisFaturasiPage(),
+        AppRoutes.alisFaturasi: (_) => const AlisPage(),
         AppRoutes.cariHesapYonetimi: (_) => const CariYonetimiPage(),
-        AppRoutes.raporlar: (_) => const ModulePage(title: 'Raporlar'),
+        AppRoutes.raporlar: (_) => const RaporlarDashboardPage(),
         AppRoutes.kullaniciYonetimi: (_) => const KullaniciYonetimiPage(),
         AppRoutes.finansYonetimi: (_) =>
             const ModulePage(title: 'Finans Yönetimi'),
