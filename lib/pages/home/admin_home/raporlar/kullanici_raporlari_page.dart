@@ -61,14 +61,16 @@ class _KullaniciRaporlariPageState extends State<KullaniciRaporlariPage> {
     }
   }
 
-  String _kasiyerAdiBul(String id) {
+  String _kasiyerAdiBul(String idOrName) {
+    if (idOrName.isEmpty || idOrName == 'Admin' || idOrName == '1') return 'Sistem/Admin';
+    
     try {
-      if (id.isEmpty) return 'Sistem/Admin';
-      final k = _kasiyerler.firstWhere((x) => x.id == id);
+      // Önce ID bazlı eşleşme ara (eski kayıtlar için)
+      final k = _kasiyerler.firstWhere((x) => x.id == idOrName);
       return k.adSoyad.isNotEmpty ? k.adSoyad : k.email;
     } catch (e) {
-      // Eğer Kasiyer modelinde yoksa, muhtemelen AppUserModel (Admin) üzerinden yapılmıştır.
-      return 'Sistem/Admin';
+      // Eğer ID bulunamazsa, bu muhtemelen yeni sistemle direkt kaydedilen İSİMDİR.
+      return idOrName;
     }
   }
 

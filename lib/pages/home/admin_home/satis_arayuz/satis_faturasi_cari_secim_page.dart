@@ -3,7 +3,7 @@ import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/services/cari_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/dialogs/cari_dialog.dart';
-import 'package:hesapix_app/pages/home/admin_home/satıs_arayuz/satis_faturasi_detay_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_detay_page.dart';
 
 class SatisFaturasiCariSecimPage extends StatefulWidget {
   const SatisFaturasiCariSecimPage({super.key});

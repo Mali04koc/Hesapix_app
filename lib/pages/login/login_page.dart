@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hesapix_app/app_routes.dart';
 import 'package:hesapix_app/services/auth_service.dart';
 import 'package:hesapix_app/services/session_service.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Referans tasarıma yakın: açık arka plan, lacivert–turuncu marka, turuncu gradient giriş.
 class LoginPage extends StatefulWidget {
@@ -22,10 +24,63 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _localAuth = LocalAuthentication();
+  final _secureStorage = const FlutterSecureStorage();
 
   bool _rememberMe = true;
   bool _obscure = true;
   bool _loading = false;
+  Map<String, String>? _lastUser; // Son giren kullanıcı bilgisi
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLastUser();
+  }
+
+  Future<void> _checkLastUser() async {
+    final last = await SessionService().getLastUser();
+    if (last != null) {
+      setState(() {
+        _lastUser = last;
+        _usernameCtrl.text = last['email'] ?? '';
+      });
+    }
+  }
+
+  Future<void> _biometricLogin() async {
+    try {
+      final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        _snack('Cihazınızda biyometrik giriş desteklenmiyor.');
+        return;
+      }
+
+      final bool didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Giriş yapmak için lütfen parmak izinizi okutun',
+        options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+      );
+
+      if (didAuthenticate) {
+        // Kayıtlı şifreyi getir
+        final savedPassword = await _secureStorage.read(key: 'user_password_${_usernameCtrl.text}');
+        if (savedPassword != null) {
+          _passwordCtrl.text = savedPassword;
+          _submit(isBiometric: true);
+        } else {
+          _snack('Biyometrik giriş için önce şifre ile giriş yapmalısınız.');
+        }
+      }
+    } catch (e) {
+      _snack('Biyometrik giriş sırasında bir hata oluştu.');
+    }
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
 
   @override
   void dispose() {
@@ -34,9 +89,9 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool isBiometric = false}) async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
+    if (!isBiometric && !_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
     try {
@@ -46,6 +101,12 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       await SessionService().save(user, rememberMe: _rememberMe);
+      
+      // Şifreyi güvenli depolamaya kaydet (Biyometrik için)
+      if (_rememberMe) {
+        await _secureStorage.write(key: 'user_password_${_usernameCtrl.text}', value: _passwordCtrl.text);
+      }
+
       if (!mounted) return;
 
       final normalizedRole = user.role
@@ -115,57 +176,87 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 36),
-                    TextFormField(
-                      controller: _usernameCtrl,
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      style: const TextStyle(
-                        color: Color(0xFF1A1A1A),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'E-posta',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.person_outline_rounded,
-                          color: Colors.grey.shade600,
-                          size: 22,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: _navy, width: 1.4),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.red.shade300),
+                    if (_lastUser != null) ...[
+                      // Trust Wallet tarzı kullanıcı başlığı
+                      Center(
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: _navy.withOpacity(0.1),
+                              child: const Icon(Icons.person, size: 50, color: _navy),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Hoş geldin,',
+                              style: theme.textTheme.bodyMedium?.copyWith(color: _textMuted),
+                            ),
+                            Text(
+                              _lastUser!['name']!,
+                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: _navy),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() {
+                                _lastUser = null;
+                                _usernameCtrl.clear();
+                              }),
+                              child: const Text('Başka hesapla giriş yap', style: TextStyle(color: _orange)),
+                            ),
+                          ],
                         ),
                       ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Bu alan zorunlu';
-                        }
-                        return null;
-                      },
-                    ),
+                    ] else
+                      TextFormField(
+                        controller: _usernameCtrl,
+                        textInputAction: TextInputAction.next,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        style: const TextStyle(
+                          color: Color(0xFF1A1A1A),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'E-posta',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.person_outline_rounded,
+                            color: Colors.grey.shade600,
+                            size: 22,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: _navy, width: 1.4),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.red.shade300),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Bu alan zorunlu';
+                          }
+                          return null;
+                        },
+                      ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _passwordCtrl,
@@ -271,19 +362,34 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    _OrangeGradientButton(
-                      loading: _loading,
-                      onTap: _loading ? null : _submit,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _OrangeGradientButton(
+                            loading: _loading,
+                            onTap: _loading ? null : _submit,
+                          ),
+                        ),
+                        if (_lastUser != null) ...[
+                          const SizedBox(width: 12),
+                          InkWell(
+                            onTap: _biometricLogin,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 52,
+                              width: 52,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: _navy.withOpacity(0.2)),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                              ),
+                              child: const Icon(Icons.fingerprint, color: _navy, size: 30),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 28),
-                    Text(
-                      'Admin ve kasiyer girişi aynı alandan yapılır; rol otomatik belirlenir.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                    ),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),

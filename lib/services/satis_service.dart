@@ -18,6 +18,7 @@ class SatisService {
     required double iskonto,
     required double genelToplam,
     required String odemeTuru,
+    required double odenenTutar,
     required String kasiyerId,
     required List<SatisDetay> sepet,
   }) async {
@@ -49,24 +50,19 @@ class SatisService {
         }
       }
 
-      // b. Cari Bilgisi Kontrolü (Açık Hesap ise cariye ihtiyaç var)
-      DocumentReference? cariRef;
-      double mevcutBakiye = 0.0;
-      
-      if (odemeTuru == 'Açık Hesap') {
-        if (cariId.isEmpty) {
-          throw Exception('Açık hesap satışlarında cari seçimi zorunludur!');
-        }
-        cariRef = _firestore.collection('cariler').doc(cariId);
-        final cariSnapshot = await transaction.get(cariRef);
-        
-        if (!cariSnapshot.exists) {
-          throw Exception('Seçilen cari bulunamadı!');
-        }
-        
-        final cariData = cariSnapshot.data() as Map<String, dynamic>;
-        mevcutBakiye = (cariData['bakiye'] ?? 0.0).toDouble();
+      // b. Cari Bilgisi Kontrolü
+      if (cariId.isEmpty) {
+        throw Exception('Satış işlemlerinde cari seçimi zorunludur!');
       }
+      DocumentReference cariRef = _firestore.collection('cariler').doc(cariId);
+      final cariSnapshot = await transaction.get(cariRef);
+      
+      if (!cariSnapshot.exists) {
+        throw Exception('Seçilen cari bulunamadı!');
+      }
+      
+      final cariData = cariSnapshot.data() as Map<String, dynamic>;
+      double mevcutBakiye = (cariData['bakiye'] ?? 0.0).toDouble();
 
       // 2. İşlemleri Uygula
       
@@ -83,6 +79,7 @@ class SatisService {
         iskonto: iskonto,
         genelToplam: genelToplam,
         odemeTuru: odemeTuru,
+        odenenTutar: odenenTutar,
         kasiyerId: kasiyerId,
       );
       
@@ -101,26 +98,35 @@ class SatisService {
         transaction.update(ref, {'stok': yeniStok});
       }
 
-      // Cari Hareket ve Bakiye Güncelleme (Sadece Açık Hesap)
-      if (odemeTuru == 'Açık Hesap' && cariRef != null) {
-        final yeniBakiye = mevcutBakiye + genelToplam; // Müşteri borçlandı, alacağımız arttı
-        transaction.update(cariRef, {'bakiye': yeniBakiye});
-        
-        final hareketRef = _firestore.collection('cari_hareketler').doc();
-        final hareketData = {
+      // Cari Hareket ve Bakiye Güncelleme
+      // 1. Satış faturası için borçlandırma (Müşteri borcu artar)
+      final hareketSatisRef = _firestore.collection('cari_hareketler').doc();
+      final hareketSatisData = {
+        'cari_id': cariId,
+        'islem_tipi': 'SATIS',
+        'tarih': FieldValue.serverTimestamp(),
+        'tutar': genelToplam,
+        'aciklama': 'Satış Faturası: $faturaNo',
+      };
+      transaction.set(hareketSatisRef, hareketSatisData);
+
+      // 2. Ödenen tutar varsa tahsilat hareketi (Müşteri borcu azalır)
+      if (odenenTutar > 0) {
+        final hareketOdemeRef = _firestore.collection('cari_hareketler').doc();
+        final hareketOdemeData = {
           'cari_id': cariId,
-          'islem_tipi': 'Satış Faturası',
+          'islem_tipi': 'ODEME_AL',
           'tarih': FieldValue.serverTimestamp(),
-          'tutar': genelToplam,
-          'aciklama': '$faturaNo numaralı Açık Hesap Satış Faturası',
+          'tutar': odenenTutar,
+          'aciklama': 'Tahsilat ($odemeTuru) - Fatura: $faturaNo',
         };
-        transaction.set(hareketRef, hareketData);
-      } else if (odemeTuru == 'Nakit') {
-         // Kasa / Nakit Hareketi istenirse buraya eklenebilir.
-         // Şimdilik cari bakiyesini etkilemiyoruz.
-      } else if (odemeTuru == 'Kart') {
-         // Banka Hareketi istenirse buraya eklenebilir.
+        transaction.set(hareketOdemeRef, hareketOdemeData);
       }
+
+      // 3. Cari bakiyeyi net bakiye ile güncelle
+      double netBorcArtisi = genelToplam - odenenTutar;
+      double yeniBakiye = mevcutBakiye + netBorcArtisi;
+      transaction.update(cariRef, {'bakiye': yeniBakiye});
       
       return yeniSatis;
     });

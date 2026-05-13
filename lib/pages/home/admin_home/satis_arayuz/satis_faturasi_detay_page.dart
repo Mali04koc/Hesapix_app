@@ -4,7 +4,7 @@ import 'package:hesapix_app/models/urun_model.dart';
 import 'package:hesapix_app/services/urun_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart'; // BarcodeScannerPage için
-import 'package:hesapix_app/pages/home/admin_home/satıs_arayuz/satis_faturasi_odeme_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_odeme_page.dart';
 
 class SatisFaturasiDetayPage extends StatefulWidget {
   final Cari cari;
@@ -56,104 +56,104 @@ class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
         _urunAra(code);
       }
     } catch (e) {
-      setState(() {
-        _hataMesaji = 'Barkod okuyucu başlatılamadı.';
-        _bulunanUrun = null;
-      });
+      _snack('Barkod okuyucu hatası: $e', error: true);
     }
   }
 
-  Future<void> _urunAra(String arama) async {
-    final query = arama.trim().toLowerCase();
-    if (query.isEmpty) {
-      setState(() {
-        _bulunanUrun = null;
-        _hataMesaji = '';
-        _adet = 1;
-      });
-      return;
-    }
-
+  Future<void> _urunAra(String query) async {
+    if (query.isEmpty) return;
     setState(() {
       _isLoading = true;
       _hataMesaji = '';
       _bulunanUrun = null;
-      _adet = 1;
     });
-
     try {
       final urunler = await _urunService.urunAra(query);
-      
       setState(() {
         _isLoading = false;
         if (urunler.isNotEmpty) {
-          final tamEslesen = urunler.where((u) => 
-            u.barkod.toLowerCase() == query || 
-            u.urunKodu.toLowerCase() == query
-          ).firstOrNull;
-          
-          _bulunanUrun = tamEslesen ?? urunler.first;
+          final tamEslesen = urunler.firstWhere(
+            (u) => u.barkod == query || u.urunKodu == query,
+            orElse: () => urunler.first,
+          );
+          _bulunanUrun = tamEslesen;
+          _adet = 1;
+          _adetCtrl.text = '1';
         } else {
-          _hataMesaji = 'Ürün bulunamadı.';
+          _hataMesaji = 'Ürün bulunamadı!';
         }
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _hataMesaji = 'Arama sırasında bir hata oluştu.';
+        _hataMesaji = 'Hata: $e';
       });
     }
   }
 
   void _sepeteEkle() {
     if (_bulunanUrun == null) return;
-    
-    // Sepette bu üründen halihazırda kaç tane var bulalım
+    final urun = _bulunanUrun!;
+    final miktar = _adet;
+    // Stok kontrolü
     int sepettekiMiktar = 0;
     for (var item in _sepet) {
-      if (item['urun'].id == _bulunanUrun!.id) {
+      if (item['urun'].id == urun.id) {
         sepettekiMiktar += (item['adet'] as int);
       }
     }
     
-    int istenenToplamMiktar = sepettekiMiktar + _adet;
-    
-    // Stok kontrolü
-    if (_bulunanUrun!.stok < istenenToplamMiktar) {
-      _snack('"${_bulunanUrun!.isim}" ürününden stokta yalnızca ${_bulunanUrun!.stok} adet var!', error: true);
+    if (urun.stok < (sepettekiMiktar + miktar)) {
+      _snack('"${urun.isim}" ürününden stokta yalnızca ${urun.stok} adet var!', error: true);
       return;
     }
     
     setState(() {
-      // Eğer sepette zaten varsa miktarını artıralım (daha temiz bir sepet görünümü için)
       bool sepetteVar = false;
       for (var item in _sepet) {
-        if (item['urun'].id == _bulunanUrun!.id) {
-          item['adet'] += _adet;
-          item['toplam'] = item['fiyat'] * item['adet'];
+        if (item['urun'].id == urun.id) {
+          item['adet'] += miktar;
+          item['araToplam'] = item['araToplam'] + (item['araToplam'] / (item['adet'] - miktar) * miktar); // Basitçe miktar bazlı oranlama yerine tekrar hesaplamak daha güvenli
+          
+          // KDV Hesaplama (KDV Dahil fiyattan geri gidiyoruz)
+          double kdvOrani = 20.0;
+          double satisFiyat = urun.satisFiyat;
+          double araBirimFiyat = satisFiyat / (1 + (kdvOrani / 100));
+          double kdvBirimTutar = satisFiyat - araBirimFiyat;
+          
+          item['araToplam'] = araBirimFiyat * item['adet'];
+          item['kdvTutar'] = kdvBirimTutar * item['adet'];
+          item['toplam'] = satisFiyat * item['adet'];
           sepetteVar = true;
           break;
         }
       }
       
       if (!sepetteVar) {
+        double kdvOrani = 20.0;
+        double satisFiyat = urun.satisFiyat;
+        double araBirimFiyat = satisFiyat / (1 + (kdvOrani / 100));
+        double kdvBirimTutar = satisFiyat - araBirimFiyat;
+
         _sepet.add({
-          'urun': _bulunanUrun,
-          'adet': _adet,
-          'fiyat': _bulunanUrun!.satisFiyat,
-          'toplam': _bulunanUrun!.satisFiyat * _adet,
+          'urun': urun,
+          'adet': miktar,
+          'fiyat': satisFiyat,
+          'kdvOrani': kdvOrani,
+          'araToplam': araBirimFiyat * miktar,
+          'kdvTutar': kdvBirimTutar * miktar,
+          'toplam': satisFiyat * miktar,
         });
       }
     });
     
-    _snack('${_bulunanUrun!.isim} sepete eklendi.');
-    
+    _snack('${urun.isim} sepete eklendi.');
+
     setState(() {
       _bulunanUrun = null;
       _aramaCtrl.clear();
       _adet = 1;
       _adetCtrl.text = '1';
-      _hataMesaji = '';
     });
   }
 
@@ -206,27 +206,69 @@ class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _aramaCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Barkod, Ürün Adı veya Kodu Girin',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: HesapixColors.primary, width: 2),
-                      ),
-                    ),
-                    onSubmitted: _urunAra,
+                  child: Autocomplete<Urun>(
+                    optionsBuilder: (TextEditingValue textEditingValue) async {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<Urun>.empty();
+                      }
+                      try {
+                        final products = await _urunService.urunAra(textEditingValue.text);
+                        return products;
+                      } catch (e) {
+                        return const Iterable<Urun>.empty();
+                      }
+                    },
+                    displayStringForOption: (Urun option) => option.isim,
+                    onSelected: (Urun selection) {
+                      setState(() {
+                        _bulunanUrun = selection;
+                        _adet = 1;
+                        _adetCtrl.text = '1';
+                        _hataMesaji = '';
+                      });
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                          hintText: 'Barkod, Ürün Adı veya Kodu (Yazmaya başlayın)',
+                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onSubmitted: (value) async {
+                          await _urunAra(value);
+                          controller.clear();
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 250),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (context, index) {
+                                final option = options.elementAt(index);
+                                return ListTile(
+                                  title: Text(option.isim, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text('Barkod: ${option.barkod} | Stok: ${option.stok} | Fiyat: ₺${option.satisFiyat.toStringAsFixed(2)}'),
+                                  onTap: () => onSelected(option),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -242,20 +284,6 @@ class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _urunAra(_aramaCtrl.text),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: HesapixColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Ara', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
             ),
             const SizedBox(height: 32),
             
@@ -313,8 +341,8 @@ class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Stok Kodu: ${u.urunKodu} | Barkod: ${u.barkod}',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              'Barkod: ${u.barkod} | Stok: ${u.stok}',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -417,4 +445,6 @@ class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
       ),
     );
   }
+
+
 }

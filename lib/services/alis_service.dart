@@ -18,6 +18,7 @@ class AlisService {
     required double iskonto,
     required double genelToplam,
     required String odemeTuru,
+    required double odenenTutar,
     required String kasiyerId,
     required List<AlisDetay> sepet,
   }) async {
@@ -79,6 +80,7 @@ class AlisService {
         iskonto: iskonto,
         genelToplam: genelToplam,
         odemeTuru: odemeTuru,
+        odenenTutar: odenenTutar,
         kasiyerId: kasiyerId,
       );
       
@@ -102,27 +104,31 @@ class AlisService {
         });
       }
 
-      // Cari Hareket ve Bakiye Güncelleme (Sadece Açık Hesap)
-      if (odemeTuru == 'Açık Hesap' && cariRef != null) {
+      // Cari Hareket ve Bakiye Güncelleme (Sadece Açık Hesap ise VEYA kısmi ödeme varsa borç yazılmalı)
+      // Satış ekranına benzer olarak: odenenTutar < genelToplam ise, aradaki fark kalan borçtur.
+      double kalanBorc = genelToplam - odenenTutar;
+      if (kalanBorc < 0) kalanBorc = 0;
+
+      if (kalanBorc > 0 && cariRef != null) {
         // Alış işleminde biz tedarikçiye borçlanırız, yani bakiye düşer (eksi yönde)
         // Cari bizim için alacaklı olur
-        final yeniBakiye = mevcutBakiye - genelToplam;
+        final yeniBakiye = mevcutBakiye - kalanBorc;
         transaction.update(cariRef, {'bakiye': yeniBakiye});
         
         final hareketRef = _firestore.collection('cari_hareketler').doc();
         final hareketData = {
           'cari_id': cariId,
-          'islem_tipi': 'Alış Faturası',
+          'islem_tipi': 'Alış Faturası (Borç)',
           'tarih': FieldValue.serverTimestamp(),
-          'tutar': genelToplam,
-          'aciklama': '$faturaNo numaralı Açık Hesap Alış Faturası',
+          'tutar': kalanBorc,
+          'aciklama': '$faturaNo numaralı Alış Faturası Borç Kaydı',
         };
         transaction.set(hareketRef, hareketData);
-      } else if (odemeTuru == 'Nakit') {
-         // Kasa / Nakit Hareketi istenirse buraya eklenebilir.
-         // Şimdilik cari bakiyesini etkilemiyoruz.
-      } else if (odemeTuru == 'Kart') {
-         // Banka Hareketi istenirse buraya eklenebilir.
+      } 
+      
+      // Nakit/Kart tahsilat kısmı, eğer istersen burada kasa hareketine işlenebilir.
+      if (odenenTutar > 0) {
+        // Örn: Kasa / Banka Hareketi
       }
       
       return yeniAlis;

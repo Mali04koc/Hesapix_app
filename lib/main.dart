@@ -12,7 +12,7 @@ import 'package:hesapix_app/pages/splash_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/stok_yonetimi_page.dart';
-import 'package:hesapix_app/pages/home/admin_home/satıs_arayuz/satis_faturasi_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_cari_secim_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/cari_yonetimi_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/odeme_islemleri/odeme_islemleri_page.dart';
 import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart';
@@ -70,7 +70,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.fiyatGor: (_) => const FiyatGorPage(),
         AppRoutes.stokYonetimi: (_) => const StokYonetimiPage(),
-        AppRoutes.satisFaturasi: (_) => const SatisFaturasiPage(),
+        AppRoutes.satisFaturasi: (_) => const SatisFaturasiCariSecimPage(),
         AppRoutes.alisFaturasi: (_) => const AlisPage(),
         AppRoutes.cariHesapYonetimi: (_) => const CariYonetimiPage(),
         AppRoutes.raporlar: (_) => const RaporlarDashboardPage(),

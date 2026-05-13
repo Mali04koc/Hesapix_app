@@ -10,6 +10,7 @@ class Satis {
   final double iskonto;
   final double genelToplam;
   final String odemeTuru; // "Nakit", "Kart", "Açık Hesap"
+  final double odenenTutar;
   final String kasiyerId;
 
   Satis({
@@ -22,6 +23,7 @@ class Satis {
     required this.iskonto,
     required this.genelToplam,
     required this.odemeTuru,
+    required this.odenenTutar,
     required this.kasiyerId,
   });
 
@@ -35,6 +37,7 @@ class Satis {
       'iskonto': iskonto,
       'genel_toplam': genelToplam,
       'odeme_turu': odemeTuru,
+      'odenen_tutar': odenenTutar,
       'kasiyer_id': kasiyerId,
     };
   }
@@ -50,6 +53,7 @@ class Satis {
       iskonto: (map['iskonto'] ?? 0.0).toDouble(),
       genelToplam: (map['genel_toplam'] ?? 0.0).toDouble(),
       odemeTuru: map['odeme_turu'] ?? '',
+      odenenTutar: (map['odenen_tutar'] ?? 0.0).toDouble(),
       kasiyerId: map['kasiyer_id'] ?? '',
     );
   }

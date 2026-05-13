@@ -1,9 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/cari_model.dart';
-import 'package:hesapix_app/models/siparis_model.dart';
-import 'package:hesapix_app/services/siparis_service.dart';
+import 'package:hesapix_app/models/satis_model.dart';
+import 'package:hesapix_app/models/satis_detay_model.dart';
+import 'package:hesapix_app/services/satis_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
+import 'package:hesapix_app/services/pdf_service.dart';
+import 'package:hesapix_app/pages/home/admin_home/pdf/pdf_preview_page.dart';
+import 'package:hesapix_app/services/session_service.dart';
 
 class SatisFaturasiOdemePage extends StatefulWidget {
   final Cari cari;
@@ -16,18 +20,26 @@ class SatisFaturasiOdemePage extends StatefulWidget {
 }
 
 class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
-  final SiparisService _siparisService = SiparisService();
+  final SatisService _satisService = SatisService();
   final TextEditingController _odenenCtrl = TextEditingController();
   
   double _toplamTutar = 0;
+  double _araToplam = 0;
+  double _kdvToplam = 0;
   String _odemeTipi = 'Nakit'; // Nakit, Kredi Kartı
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _toplamTutar = widget.sepet.fold(0, (sum, item) => sum + (item['toplam'] as double));
+    _hesaplaToplamlar();
     _odenenCtrl.text = _toplamTutar.toStringAsFixed(2); // Varsayılan olarak tamamı ödendi
+  }
+
+  void _hesaplaToplamlar() {
+    _toplamTutar = widget.sepet.fold(0, (sum, item) => sum + (item['toplam'] as double));
+    _araToplam = widget.sepet.fold(0, (sum, item) => sum + (item['araToplam'] as double));
+    _kdvToplam = widget.sepet.fold(0, (sum, item) => sum + (item['kdvTutar'] as double));
   }
 
   @override
@@ -36,14 +48,15 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
     super.dispose();
   }
 
-  String _generateSiparisNo() {
-    final random = Random();
-    final number = 100000 + random.nextInt(900000); // 6 haneli rastgele sayı
-    return 'SP-$number';
-  }
-
-  Future<void> _siparisTamamla() async {
+  Future<void> _satisTamamla() async {
     double odenen = double.tryParse(_odenenCtrl.text.trim()) ?? 0.0;
+    
+    // Cari 111 Kontrolü (Kısmi ödeme yasak)
+    if (widget.cari.cariKodu == '111' && odenen < _toplamTutar) {
+      _snack('Genel müşteri (111) için kısmi ödeme yapılamaz. Lütfen tutarın tamamını girin.', error: true);
+      return;
+    }
+
     if (odenen < 0 || odenen > _toplamTutar) {
       _snack('Geçersiz ödenen tutar. (0 ile $_toplamTutar arası olmalı)', error: true);
       return;
@@ -52,44 +65,110 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
     setState(() => _isLoading = true);
 
     try {
-      final siparisNo = _generateSiparisNo();
-      
-      // sepet modelini veritabanı formatına çevir
-      final List<Map<String, dynamic>> dbSepet = widget.sepet.map((item) {
+      // Sepet verilerini SatisDetay listesine çevir
+      final List<SatisDetay> detaylar = widget.sepet.map((item) {
         final urun = item['urun'];
-        return {
-          'urun_doc_id': urun.id,
-          'urun_ismi': urun.isim,
-          'adet': item['adet'],
-          'fiyat': item['fiyat'],
-          'toplam': item['toplam'],
-        };
+        return SatisDetay(
+          satisId: '', // Servis içinde doldurulacak
+          urunId: urun.id ?? '',
+          urunAdi: urun.isim,
+          miktar: item['adet'],
+          birimFiyat: item['fiyat'],
+          kdvOrani: item['kdvOrani'] ?? 20.0,
+          araToplam: item['araToplam'],
+          kdvTutar: item['kdvTutar'],
+          toplam: item['toplam'],
+        );
       }).toList();
 
-      final yeniSiparis = Siparis(
-        siparisNo: siparisNo,
-        cariId: widget.cari.id ?? '',
-        cariAdi: widget.cari.firmaAdi,
-        kasiyerId: 'Admin', // Normalde Auth user ID
-        tarih: DateTime.now(),
-        toplamTutar: _toplamTutar,
-        odenenTutar: odenen,
-        odemeTipi: _odemeTipi,
-        sepet: dbSepet,
-      );
+      final currentUser = await SessionService().read();
+      final kasiyerAdi = currentUser?.username ?? 'Admin';
 
-      await _siparisService.addSiparis(yeniSiparis);
+      final satis = await _satisService.satisYap(
+        cariId: widget.cari.id ?? '',
+        araToplam: _araToplam,
+        kdvToplam: _kdvToplam,
+        iskonto: 0.0,
+        genelToplam: _toplamTutar,
+        odemeTuru: _odemeTipi,
+        odenenTutar: odenen,
+        kasiyerId: kasiyerAdi, 
+        sepet: detaylar,
+      );
       
-      _snack('Sipariş başarıyla oluşturuldu! Stoklar güncellendi.');
-      
-      // Başarılı olursa admin home page'e geri dönelim (tüm sayfa geçmişini silerek)
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        _showBasariDialog(satis, detaylar);
       }
     } catch (e) {
       _snack(e.toString().replaceAll('Exception: ', ''), error: true);
       setState(() => _isLoading = false);
     }
+  }
+
+  void _showBasariDialog(Satis satis, List<SatisDetay> detaylar) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.check_circle, color: HesapixColors.success, size: 60),
+            SizedBox(height: 16),
+            Text('Satış Gerçekleşti', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Satış faturası başarıyla oluşturuldu ve stoklar güncellendi.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final pdfData = await PdfService.generateSatisFaturasiPdf(
+                      satis: satis,
+                      detaylar: detaylar,
+                      cari: widget.cari,
+                    );
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfPreviewPage(
+                            pdfData: pdfData,
+                            title: 'Satış Faturası Önizleme',
+                            filename: 'hesapix_${satis.faturaNo}',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Faturayı Görüntüle'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HesapixColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('Ana Sayfaya Dön'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _snack(String message, {bool error = false}) {
@@ -106,7 +185,7 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
   void _urunCikar(int index) {
     setState(() {
       widget.sepet.removeAt(index);
-      _toplamTutar = widget.sepet.fold(0, (sum, item) => sum + (item['toplam'] as double));
+      _hesaplaToplamlar();
       _odenenCtrl.text = _toplamTutar.toStringAsFixed(2);
     });
     if (widget.sepet.isEmpty) {
@@ -190,8 +269,18 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
                   onPressed: () {
                     setState(() {
                       widget.sepet[index]['adet'] = tempAdet;
-                      widget.sepet[index]['toplam'] = widget.sepet[index]['fiyat'] * tempAdet;
-                      _toplamTutar = widget.sepet.fold(0, (sum, item) => sum + (item['toplam'] as double));
+                      
+                      // KDV ve Ara Toplamı yeniden hesapla
+                      double kdvOrani = widget.sepet[index]['kdvOrani'] ?? 20.0;
+                      double satisFiyat = widget.sepet[index]['fiyat'];
+                      double araBirimFiyat = satisFiyat / (1 + (kdvOrani / 100));
+                      double kdvBirimTutar = satisFiyat - araBirimFiyat;
+
+                      widget.sepet[index]['araToplam'] = araBirimFiyat * tempAdet;
+                      widget.sepet[index]['kdvTutar'] = kdvBirimTutar * tempAdet;
+                      widget.sepet[index]['toplam'] = satisFiyat * tempAdet;
+
+                      _hesaplaToplamlar();
                       _odenenCtrl.text = _toplamTutar.toStringAsFixed(2);
                     });
                     Navigator.pop(context);
@@ -307,6 +396,22 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      const Text('Ara Toplam:', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                      Text('₺${_araToplam.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('KDV (%20):', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                      Text('₺${_kdvToplam.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const Divider(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       const Text('Genel Toplam:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       Text('₺${_toplamTutar.toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: HesapixColors.primary)),
                     ],
@@ -383,7 +488,7 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _siparisTamamla,
+                onPressed: _isLoading ? null : _satisTamamla,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HesapixColors.success,
                   foregroundColor: Colors.white,
@@ -392,7 +497,7 @@ class _SatisFaturasiOdemePageState extends State<SatisFaturasiOdemePage> {
                 ),
                 child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Siparişi Tamamla', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    : const Text('Satışı Tamamla', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 32),

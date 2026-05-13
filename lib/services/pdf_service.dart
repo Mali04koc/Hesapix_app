@@ -7,6 +7,7 @@ import 'package:hesapix_app/models/satis_model.dart';
 import 'package:hesapix_app/models/satis_detay_model.dart';
 import 'package:hesapix_app/models/alis_model.dart';
 import 'package:hesapix_app/models/alis_detay_model.dart';
+import 'package:hesapix_app/models/cari_model.dart';
 
 class PdfService {
   static final _currencyFormat = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
@@ -16,26 +17,37 @@ class PdfService {
   static Future<Uint8List> generateSatisFaturasiPdf({
     required Satis satis,
     required List<SatisDetay> detaylar,
-    required String cariIsim,
+    required Cari cari,
   }) async {
     final pdf = pw.Document();
+    final font = await PdfGoogleFonts.robotoRegular();
+    final boldFont = await PdfGoogleFonts.robotoBold();
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _buildHeader('SATIŞ FATURASI', satis.faturaNo, satis.tarih),
               pw.SizedBox(height: 20),
-              _buildCustomerInfo(cariIsim, 'Müşteri Bilgileri'),
+              _buildCustomerInfo(cari, 'Müşteri Bilgileri'),
               pw.SizedBox(height: 20),
-              _buildSatisItemsTable(detaylar),
-              pw.SizedBox(height: 20),
-              _buildTotals(satis.araToplam, satis.iskonto, satis.kdvToplam, satis.genelToplam, satis.odemeTuru),
+               _buildSatisItemsTable(detaylar),
+              pw.SizedBox(height: 10),
+              _buildTotals(
+                araToplam: satis.araToplam, 
+                iskonto: satis.iskonto, 
+                kdv: satis.kdvToplam, 
+                genelToplam: satis.genelToplam, 
+                odemeTuru: satis.odemeTuru,
+                odenenTutar: satis.odenenTutar,
+                cari: cari,
+              ),
               pw.SizedBox(height: 40),
-              _buildFooter(),
+              _buildFooter(satis.kasiyerId),
             ],
           );
         },
@@ -49,26 +61,37 @@ class PdfService {
   static Future<Uint8List> generateAlisFaturasiPdf({
     required Alis alis,
     required List<AlisDetay> detaylar,
-    required String tedarikciIsim,
+    required Cari tedarikci,
   }) async {
     final pdf = pw.Document();
+    final font = await PdfGoogleFonts.robotoRegular();
+    final boldFont = await PdfGoogleFonts.robotoBold();
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _buildHeader('ALIŞ FATURASI', alis.faturaNo, alis.tarih),
               pw.SizedBox(height: 20),
-              _buildCustomerInfo(tedarikciIsim, 'Tedarikçi Bilgileri'),
+              _buildCustomerInfo(tedarikci, 'Tedarikçi Bilgileri'),
               pw.SizedBox(height: 20),
               _buildAlisItemsTable(detaylar),
-              pw.SizedBox(height: 20),
-              _buildTotals(alis.araToplam, alis.iskonto, alis.kdvToplam, alis.genelToplam, alis.odemeTuru),
+              pw.SizedBox(height: 10),
+              _buildTotals(
+                araToplam: alis.araToplam, 
+                iskonto: alis.iskonto, 
+                kdv: alis.kdvToplam, 
+                genelToplam: alis.genelToplam, 
+                odemeTuru: alis.odemeTuru,
+                odenenTutar: alis.odenenTutar,
+                cari: tedarikci,
+              ),
               pw.SizedBox(height: 40),
-              _buildFooter(),
+              _buildFooter(alis.kasiyerId),
             ],
           );
         },
@@ -87,8 +110,8 @@ class PdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('HESAPİX ERP', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo)),
-            pw.Text('Profesyonel Ön Muhasebe Çözümü', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+            pw.Text('HESAPİX', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo)),
+            pw.Text('Muhasebenin Kalbi', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
           ],
         ),
         pw.Column(
@@ -105,7 +128,7 @@ class PdfService {
   }
 
   // Ortak Müşteri/Tedarikçi Bilgisi
-  static pw.Widget _buildCustomerInfo(String isim, String baslik) {
+  static pw.Widget _buildCustomerInfo(Cari cari, String baslik) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -117,7 +140,10 @@ class PdfService {
         children: [
           pw.Text(baslik, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
           pw.SizedBox(height: 4),
-          pw.Text(isim, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+          pw.Text(cari.firmaAdi, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+          if (cari.vergiNo.isNotEmpty) pw.Text('Vergi No: ${cari.vergiNo}', style: const pw.TextStyle(fontSize: 12)),
+          if (cari.adres.isNotEmpty) pw.Text('Adres: ${cari.adres}', style: const pw.TextStyle(fontSize: 12)),
+          if (cari.mail.isNotEmpty) pw.Text('E-posta: ${cari.mail}', style: const pw.TextStyle(fontSize: 12)),
         ],
       ),
     );
@@ -182,31 +208,92 @@ class PdfService {
   }
 
   // Toplamlar Alanı
-  static pw.Widget _buildTotals(double araToplam, double iskonto, double kdv, double genelToplam, String odemeTuru) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+  static pw.Widget _buildTotals({
+    required double araToplam,
+    required double iskonto,
+    required double kdv,
+    required double genelToplam,
+    required String odemeTuru,
+    required double odenenTutar,
+    required Cari cari,
+  }) {
+    double kalanBorc = genelToplam - odenenTutar;
+    if (kalanBorc < 0) kalanBorc = 0;
+
+    bool isGenericCari = cari.cariKodu == '111';
+
+    return pw.Column(
       children: [
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
           children: [
-            pw.Text('Ödeme Türü:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-            pw.Text(odemeTuru, style: const pw.TextStyle(fontSize: 16)),
+            pw.Container(
+              width: 200,
+              child: pw.Column(
+                children: [
+                  _buildTotalRow('Ara Toplam:', araToplam),
+                  if (iskonto > 0) _buildTotalRow('İskonto:', -iskonto),
+                  _buildTotalRow('KDV Toplamı:', kdv),
+                  pw.Divider(color: PdfColors.grey400),
+                  _buildTotalRow('Genel Toplam:', genelToplam, isBold: true),
+                ],
+              ),
+            ),
           ],
         ),
-        pw.Container(
-          width: 250,
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              _buildTotalRow('Ara Toplam:', araToplam),
-              if (iskonto > 0) _buildTotalRow('İskonto:', -iskonto),
-              _buildTotalRow('KDV Toplamı:', kdv),
-              pw.Divider(color: PdfColors.grey400),
-              _buildTotalRow('Genel Toplam:', genelToplam, isBold: true),
-            ],
-          ),
+        pw.SizedBox(height: 20),
+        pw.Divider(color: PdfColors.grey300, thickness: 1, borderStyle: pw.BorderStyle.dashed),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('ÖDEME DETAYLARI', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.indigo)),
+                pw.SizedBox(height: 4),
+                pw.Text('Ödeme Yöntemi: $odemeTuru', style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Ödenen Tutar: ${_currencyFormat.format(odenenTutar)}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+            if (!isGenericCari)
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('CARİ HESAP DURUMU', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.indigo)),
+                  pw.SizedBox(height: 4),
+                  if (kalanBorc > 0)
+                    pw.Text('Bu İşlemden Kalan Borç: ${_currencyFormat.format(kalanBorc)}', style: pw.TextStyle(fontSize: 11, color: PdfColors.red)),
+                  pw.SizedBox(height: 4),
+                  _buildBalanceText(cari.bakiye),
+                ],
+              ),
+          ],
         ),
+      ],
+    );
+  }
+
+  static pw.Widget _buildBalanceText(double bakiye) {
+    String label = '';
+    PdfColor color = PdfColors.black;
+    
+    if (bakiye > 0) {
+      label = 'Müşteri Borcu (Alınacak):';
+      color = PdfColors.red;
+    } else if (bakiye < 0) {
+      label = 'Firma Alacağı (Ödenecek):';
+      color = PdfColors.green;
+    } else {
+      label = 'Cari Hesap Bakiyesi:';
+    }
+
+    return pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text('$label ', style: const pw.TextStyle(fontSize: 11)),
+        pw.Text(_currencyFormat.format(bakiye.abs()), style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: color)),
       ],
     );
   }
@@ -224,14 +311,21 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildFooter() {
+  static pw.Widget _buildFooter(String kasiyer) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 10),
-        pw.Text('Bizi tercih ettiğiniz için teşekkür ederiz.', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-        pw.Text('Hesapix - Akıllı ERP Çözümleri', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('İşlemi Yapan: $kasiyer', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Bizi tercih ettiğiniz için teşekkür ederiz.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Text('Hesapix - Akıllı ERP Çözümleri', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
       ],
     );
   }

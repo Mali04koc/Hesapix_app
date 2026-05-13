@@ -8,7 +8,10 @@ import 'package:hesapix_app/services/urun_service.dart';
 import 'package:hesapix_app/services/cari_service.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
+import 'package:hesapix_app/models/alis_detay_model.dart';
 import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart';
+import 'package:hesapix_app/pages/home/admin_home/pdf/pdf_preview_page.dart';
+import 'package:hesapix_app/services/session_service.dart';
 
 class AlisPage extends StatefulWidget {
   const AlisPage({super.key});
@@ -19,11 +22,20 @@ class AlisPage extends StatefulWidget {
 
 class _AlisPageState extends State<AlisPage> {
   final TextEditingController _aramaCtrl = TextEditingController();
+  final TextEditingController _odenenCtrl = TextEditingController();
   final UrunService _urunService = UrunService();
   final CariService _cariService = CariService();
   final AlisService _alisService = AlisService();
   
   Cari? _seciliTedarikci;
+  bool _isOdenenEdited = false; // Kullanıcı elle değiştirdi mi?
+
+  @override
+  void dispose() {
+    _aramaCtrl.dispose();
+    _odenenCtrl.dispose();
+    super.dispose();
+  }
   bool _isProcessing = false;
 
   void _snack(String message, {bool error = false}) {
@@ -68,10 +80,10 @@ class _AlisPageState extends State<AlisPage> {
   }
 
   Future<void> _tedarikciSecDialog() async {
-    final cariler = await _cariService.getCariler().first;
-    // Sadece tedarikçi olanları filtrelemek istenirse burada yapılabilir:
-    // final tedarikciler = cariler.where((c) => c.cariTipi == 'Tedarikçi').toList();
-    // Şimdilik hepsi
+    final allCariler = await _cariService.getCariler().first;
+    // Kod: 111 olan genel müşteriyi alış kısmında gösterme
+    final cariler = allCariler.where((c) => c.cariKodu != '111').toList();
+    
     if (!mounted) return;
 
     showDialog(
@@ -120,6 +132,20 @@ class _AlisPageState extends State<AlisPage> {
     
     try {
       final sepetKopya = List.of(provider.sepet);
+      double odenen = double.tryParse(_odenenCtrl.text.replaceAll(',', '.')) ?? 0.0;
+      
+      // Cari 111 Kontrolü (Kısmi ödeme yasak)
+      if (_seciliTedarikci?.cariKodu == '111' && odenen < provider.genelToplam) {
+        _snack('Genel müşteri (111) için kısmi ödeme yapılamaz. Lütfen tutarın tamamını girin.', error: true);
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      if (odenen > provider.genelToplam) odenen = provider.genelToplam;
+      
+      final currentUser = await SessionService().read();
+      final kasiyerAdi = currentUser?.username ?? 'Admin';
+
       final alis = await _alisService.alisYap(
         cariId: _seciliTedarikci!.id ?? '', 
         araToplam: provider.araToplam,
@@ -127,52 +153,15 @@ class _AlisPageState extends State<AlisPage> {
         iskonto: provider.iskonto,
         genelToplam: provider.genelToplam,
         odemeTuru: provider.odemeTuru,
-        kasiyerId: '1', 
+        odenenTutar: odenen,
+        kasiyerId: kasiyerAdi, 
         sepet: provider.sepet,
       );
       
       _snack('Alış Faturası başarıyla kaydedildi!');
       
       if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Alış Başarılı'),
-            content: const Text('Alış faturası kaydedildi. Fiş/Fatura yazdırmak veya paylaşmak ister misiniz?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  provider.sepetiTemizle();
-                  setState(() => _seciliTedarikci = null);
-                },
-                child: const Text('Hayır, Kapat', style: TextStyle(color: Colors.grey)),
-              ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  try {
-                    final pdfBytes = await PdfService.generateAlisFaturasiPdf(
-                      alis: alis,
-                      detaylar: sepetKopya,
-                      tedarikciIsim: _seciliTedarikci?.firmaAdi ?? 'Tedarikçi',
-                    );
-                    await PdfService.sharePdf(pdfBytes, 'AlisFaturasi_${alis.faturaNo}');
-                  } catch (e) {
-                     _snack('PDF oluşturulurken hata: $e', error: true);
-                  } finally {
-                    provider.sepetiTemizle();
-                    setState(() => _seciliTedarikci = null);
-                  }
-                },
-                icon: const Icon(Icons.share, color: Colors.white),
-                label: const Text('PDF Paylaş / Yazdır', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: HesapixColors.primary),
-              ),
-            ],
-          ),
-        );
+        _showBasariDialog(alis, sepetKopya);
       }
       
     } catch (e) {
@@ -180,6 +169,74 @@ class _AlisPageState extends State<AlisPage> {
     } finally {
       setState(() => _isProcessing = false);
     }
+  }
+
+  void _showBasariDialog(dynamic alis, List<dynamic> detaylar) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.check_circle, color: HesapixColors.success, size: 60),
+            SizedBox(height: 16),
+            Text('Alış Gerçekleşti', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Alış faturası başarıyla kaydedildi ve stoklar güncellendi.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final pdfData = await PdfService.generateAlisFaturasiPdf(
+                      alis: alis,
+                      detaylar: detaylar.cast<AlisDetay>().toList(),
+                      tedarikci: _seciliTedarikci!,
+                    );
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfPreviewPage(
+                            pdfData: pdfData,
+                            title: 'Alış Faturası Önizleme',
+                            filename: 'hesapix_${alis.faturaNo}',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Faturayı Görüntüle'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HesapixColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Provider.of<AlisProvider>(context, listen: false).sepetiTemizle();
+                  setState(() => _seciliTedarikci = null);
+                  Navigator.of(context).pop(); // Dialogu kapat
+                },
+                child: const Text('Tamam'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _fiyatDuzenleDialog(String urunId, String urunAdi, double mevcutFiyat) {
@@ -218,9 +275,93 @@ class _AlisPageState extends State<AlisPage> {
     );
   }
 
+  void _adetDuzenleDialog(String urunId, String urunAdi, int mevcutAdet) {
+    int tempAdet = mevcutAdet;
+    final TextEditingController tempCtrl = TextEditingController(text: tempAdet.toString());
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('$urunAdi\nAdet Düzenle', textAlign: TextAlign.center),
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      if (tempAdet > 1) {
+                        setDialogState(() {
+                          tempAdet--;
+                          tempCtrl.text = tempAdet.toString();
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.remove_circle_outline, color: HesapixColors.primary, size: 32),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 70,
+                    child: TextField(
+                      controller: tempCtrl,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        int? parsed = int.tryParse(val);
+                        if (parsed != null && parsed > 0) {
+                          tempAdet = parsed;
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      setDialogState(() {
+                        tempAdet++;
+                        tempCtrl.text = tempAdet.toString();
+                      });
+                    },
+                    icon: const Icon(Icons.add_circle_outline, color: HesapixColors.primary, size: 32),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal', style: TextStyle(color: Colors.grey))),
+                ElevatedButton(
+                  onPressed: () {
+                    Provider.of<AlisProvider>(context, listen: false).miktarGuncelle(urunId, tempAdet);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: HesapixColors.primary, foregroundColor: Colors.white),
+                  child: const Text('Güncelle'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AlisProvider>(context);
+
+    // Otomatik tutar doldurma (Kullanıcı elle değiştirmediyse toplamla senkronize tut)
+    if (!_isOdenenEdited && provider.genelToplam > 0) {
+      String currentTotal = provider.genelToplam.toStringAsFixed(2);
+      if (_odenenCtrl.text != currentTotal) {
+        _odenenCtrl.text = currentTotal;
+      }
+    }
 
     return Scaffold(
       backgroundColor: HesapixColors.bg,
@@ -246,7 +387,6 @@ class _AlisPageState extends State<AlisPage> {
                         DropdownButton<String>(
                           value: provider.odemeTuru,
                           items: const [
-                            DropdownMenuItem(value: 'Açık Hesap', child: Text('Açık Hesap')),
                             DropdownMenuItem(value: 'Nakit', child: Text('Nakit')),
                             DropdownMenuItem(value: 'Kart', child: Text('Kart')),
                           ],
@@ -426,7 +566,14 @@ class _AlisPageState extends State<AlisPage> {
                                           constraints: const BoxConstraints(),
                                         ),
                                         const SizedBox(width: 8),
-                                        Text('${item.miktar}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        InkWell(
+                                          onTap: () => _adetDuzenleDialog(item.urunId, item.urunAdi, item.miktar),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(4)),
+                                            child: Text('${item.miktar}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          ),
+                                        ),
                                         const SizedBox(width: 8),
                                         IconButton(
                                           icon: const Icon(Icons.add_circle_outline, color: Colors.green),
@@ -478,6 +625,60 @@ class _AlisPageState extends State<AlisPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Ödenen Tutar:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        SizedBox(
+                          width: 120,
+                          child: TextField(
+                            controller: _odenenCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            textAlign: TextAlign.right,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              prefixText: '₺ ',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                _isOdenenEdited = true;
+                                if (val.isEmpty) _isOdenenEdited = false; // Silinirse tekrar otomatiğe bağla
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (context) {
+                        double odenen = double.tryParse(_odenenCtrl.text.replaceAll(',', '.')) ?? 0;
+                        double kalanBorc = provider.genelToplam - odenen;
+                        if (kalanBorc < 0) kalanBorc = 0;
+                        
+                        if (kalanBorc > 0) {
+                          return Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: HesapixColors.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded, color: HesapixColors.danger, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Cari hesaba borç olarak eklenecek: ₺${kalanBorc.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: HesapixColors.danger, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }
+                    ),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -487,7 +688,7 @@ class _AlisPageState extends State<AlisPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: _alisiTamamla,
-                        child: const Text('Alışı Kaydet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                        child: const Text('Alışı Onayla', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                       ),
                     ),
                   ],
