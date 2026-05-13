@@ -111,7 +111,7 @@ class PdfService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text('HESAPİX', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo)),
-            pw.Text('Muhasebenin Kalbi', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+            pw.Text('Her zaman bekleriz', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
           ],
         ),
         pw.Column(

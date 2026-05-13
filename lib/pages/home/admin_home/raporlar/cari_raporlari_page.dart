@@ -127,13 +127,15 @@ class _CariRaporlariPageState extends State<CariRaporlariPage> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                children: [
-                  // Borçlu Cariler Sekmesi
-                  _CariListesi(cariler: borclular, toplamTutar: toplamAlacak, isBorclu: true, onCariTap: _ekstreGoster),
-                  // Alacaklı Cariler Sekmesi
-                  _CariListesi(cariler: alacaklilar, toplamTutar: toplamBorc, isBorclu: false, onCariTap: _ekstreGoster),
-                ],
+            : SafeArea(
+                child: TabBarView(
+                  children: [
+                    // Borçlu Cariler Sekmesi
+                    _CariListesi(cariler: borclular, toplamTutar: toplamAlacak, isBorclu: true, onCariTap: _ekstreGoster),
+                    // Alacaklı Cariler Sekmesi
+                    _CariListesi(cariler: alacaklilar, toplamTutar: toplamBorc, isBorclu: false, onCariTap: _ekstreGoster),
+                  ],
+                ),
               ),
       ),
     );
@@ -170,7 +172,10 @@ class _CariListesi extends StatelessWidget {
             children: [
               Text(isBorclu ? 'Toplam Alacağımız' : 'Toplam Borcumuz', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              Text('₺${toplamTutar.toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('₺${toplamTutar.toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              ),
             ],
           ),
         ),

@@ -38,25 +38,32 @@ class PdfPreviewPage extends StatelessWidget {
             icon: const Icon(Icons.download_rounded),
             onPressed: (context, build, format) async {
               try {
-                // Dosyayı cihazın dökümanlar klasörüne kaydet
-                final directory = await getApplicationDocumentsDirectory();
-                final file = File('${directory.path}/$filename.pdf');
+                // Android için gerçek Downloads klasörünü bulmaya çalış
+                Directory? directory;
+                if (Platform.isAndroid) {
+                  directory = Directory('/storage/emulated/0/Download');
+                  if (!await directory.exists()) {
+                    directory = await getExternalStorageDirectory();
+                  }
+                } else {
+                  directory = await getApplicationDocumentsDirectory();
+                }
+
+                final filePath = '${directory!.path}/$filename.pdf';
+                final file = File(filePath);
                 await file.writeAsBytes(pdfData);
                 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Dosya kaydedildi: ${file.path}'),
+                    const SnackBar(
+                      content: Text('Dosya başarıyla indirildi.'),
                       backgroundColor: Colors.green,
                     ),
                   );
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Dosya kaydedilirken bir hata oluştu.')),
-                  );
-                }
+                // Eğer doğrudan klasöre erişilemezse (İzin vb.), paylaşma menüsünü aç ki kullanıcı "Dosyalara Kaydet" diyebilsin
+                await Printing.sharePdf(bytes: pdfData, filename: "$filename.pdf");
               }
             },
           ),

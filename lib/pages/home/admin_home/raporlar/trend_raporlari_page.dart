@@ -93,7 +93,8 @@ class _TrendRaporlariPageState extends State<TrendRaporlariPage> {
                     const Text('Günlük Ciro Trendi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     Container(
-                      height: 300,
+                      height: MediaQuery.of(context).size.height * 0.35,
+                      constraints: const BoxConstraints(minHeight: 250),
                       padding: const EdgeInsets.only(right: 20, left: 4, top: 24, bottom: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -117,9 +118,8 @@ class _TrendRaporlariPageState extends State<TrendRaporlariPage> {
                                   if (index < 0 || index >= veriler.length) return const Text('');
                                   if (veriler.length > 10 && index % 5 != 0 && index != veriler.length - 1) return const Text('');
                                   
-                                  return SideTitleWidget(
-                                    axisSide: meta.axisSide,
-                                    space: 8,
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(veriler[index].key, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                   );
                                 },
@@ -128,7 +128,7 @@ class _TrendRaporlariPageState extends State<TrendRaporlariPage> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 44,
+                                reservedSize: 56,
                                 getTitlesWidget: (value, meta) {
                                   if (value == maxY) return const Text('');
                                   return Text(

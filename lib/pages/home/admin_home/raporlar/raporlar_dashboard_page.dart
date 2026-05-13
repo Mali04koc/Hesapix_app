@@ -80,7 +80,7 @@ class RaporlarDashboardPage extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.2,
+            childAspectRatio: 1.0, // Daha kare yaparak dikey alan kazandık
           ),
           itemBuilder: (context, index) {
             final item = menuItems[index];
@@ -94,31 +94,38 @@ class RaporlarDashboardPage extends StatelessWidget {
               child: Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: item['color'].withOpacity(0.1),
-                        shape: BoxShape.circle,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: item['color'].withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          item['icon'],
+                          size: 40, // Boyutu biraz küçülttük
+                          color: item['color'],
+                        ),
                       ),
-                      child: Icon(
-                        item['icon'],
-                        size: 48,
-                        color: item['color'],
+                      const SizedBox(height: 12),
+                      Flexible(
+                        child: Text(
+                          item['title'],
+                          style: const TextStyle(
+                            fontSize: 14, // Yazı boyutunu biraz küçülttük
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      item['title'],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );

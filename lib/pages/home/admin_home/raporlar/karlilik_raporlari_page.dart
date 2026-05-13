@@ -126,126 +126,128 @@ class _KarlilikRaporlariPageState extends State<KarlilikRaporlariPage> {
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Column(
-        children: [
-          // Filtre Alanı
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextButton.icon(
-                  onPressed: () => _tarihSec(context, true),
-                  icon: const Icon(Icons.date_range),
-                  label: Text('${_baslangic.day}.${_baslangic.month}.${_baslangic.year}'),
-                ),
-                const Text('-'),
-                TextButton.icon(
-                  onPressed: () => _tarihSec(context, false),
-                  icon: const Icon(Icons.date_range),
-                  label: Text('${_bitis.day}.${_bitis.month}.${_bitis.year}'),
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: Column(
+                children: [
+                  // Filtre Alanı
+                  Container(
+                    color: Colors.white,
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        // A) Genel Kârlılık Kartları
-                        Row(
-                          children: [
-                            _kutu('Ciro', '₺${toplamCiro.toStringAsFixed(2)}', Colors.blue),
-                            const SizedBox(width: 8),
-                            _kutu('Maliyet', '₺${toplamMaliyet.toStringAsFixed(2)}', Colors.orange),
-                          ],
+                        TextButton.icon(
+                          onPressed: () => _tarihSec(context, true),
+                          icon: const Icon(Icons.date_range),
+                          label: Text('${_baslangic.day}.${_baslangic.month}.${_baslangic.year}'),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _kutu('Net Kâr', '₺${netKar.toStringAsFixed(2)}', netKar >= 0 ? Colors.green : Colors.red),
-                            const SizedBox(width: 8),
-                            _kutu('Kâr Oranı', '%${karOrani.toStringAsFixed(2)}', netKar >= 0 ? Colors.green : Colors.red),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // B) Ürün Bazlı Kârlılık
-                        Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Ürün Bazlı Kârlılık (Top 10)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                const Divider(),
-                                const Row(
-                                  children: [
-                                    Expanded(flex: 2, child: Text('Ürün', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(child: Text('Kâr', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(child: Text('Oran', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ...siraliUrunler.take(10).map((e) {
-                                  double uSatis = e.value['satisTutar'];
-                                  double uKar = e.value['kar'];
-                                  double uOran = uSatis > 0 ? (uKar / uSatis) * 100 : 0;
-                                  Color kColor = uKar >= 0 ? Colors.green : Colors.red;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                    child: Row(
-                                      children: [
-                                        Expanded(flex: 2, child: Text(e.key, overflow: TextOverflow.ellipsis)),
-                                        Expanded(child: Text('₺${uKar.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(color: kColor, fontWeight: FontWeight.bold))),
-                                        Expanded(child: Text('%${uOran.toStringAsFixed(1)}', textAlign: TextAlign.right, style: TextStyle(color: kColor, fontWeight: FontWeight.bold))),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // C) Cari Bazlı Karlılık Özeti
-                        Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('En Çok Ciro Getiren Cariler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                const Divider(),
-                                ...siraliCariler.take(5).map((e) => Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(child: Text(_cariAdiBul(e.key))),
-                                      Text('₺${e.value.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: HesapixColors.primary)),
-                                    ],
-                                  ),
-                                )),
-                              ],
-                            ),
-                          ),
+                        const Text('-'),
+                        TextButton.icon(
+                          onPressed: () => _tarihSec(context, false),
+                          icon: const Icon(Icons.date_range),
+                          label: Text('${_bitis.day}.${_bitis.month}.${_bitis.year}'),
                         ),
                       ],
                     ),
                   ),
-          ),
-        ],
-      ),
+                  
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // A) Genel Kârlılık Kartları
+                          Row(
+                            children: [
+                              _kutu('Ciro', '₺${toplamCiro.toStringAsFixed(2)}', Colors.blue),
+                              const SizedBox(width: 8),
+                              _kutu('Maliyet', '₺${toplamMaliyet.toStringAsFixed(2)}', Colors.orange),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _kutu('Net Kâr', '₺${netKar.toStringAsFixed(2)}', netKar >= 0 ? Colors.green : Colors.red),
+                              const SizedBox(width: 8),
+                              _kutu('Kâr Oranı', '%${karOrani.toStringAsFixed(2)}', netKar >= 0 ? Colors.green : Colors.red),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // B) Ürün Bazlı Kârlılık
+                          Card(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Ürün Bazlı Kârlılık (Top 10)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  const Divider(),
+                                  const Row(
+                                    children: [
+                                      Expanded(flex: 2, child: Text('Ürün', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      Expanded(child: Text('Kâr', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
+                                      Expanded(child: Text('Oran', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...siraliUrunler.take(10).map((e) {
+                                    double uSatis = e.value['satisTutar'];
+                                    double uKar = e.value['kar'];
+                                    double uOran = uSatis > 0 ? (uKar / uSatis) * 100 : 0;
+                                    Color kColor = uKar >= 0 ? Colors.green : Colors.red;
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                      child: Row(
+                                        children: [
+                                          Expanded(flex: 2, child: Text(e.key, overflow: TextOverflow.ellipsis)),
+                                          Expanded(child: Text('₺${uKar.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(color: kColor, fontWeight: FontWeight.bold))),
+                                          Expanded(child: Text('%${uOran.toStringAsFixed(1)}', textAlign: TextAlign.right, style: TextStyle(color: kColor, fontWeight: FontWeight.bold))),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // C) Cari Bazlı Karlılık Özeti
+                          Card(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('En Çok Ciro Getiren Cariler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  const Divider(),
+                                  ...siraliCariler.take(5).map((e) => Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(child: Text(_cariAdiBul(e.key))),
+                                        Text('₺${e.value.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: HesapixColors.primary)),
+                                      ],
+                                    ),
+                                  )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
