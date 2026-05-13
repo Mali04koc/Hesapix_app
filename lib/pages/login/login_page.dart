@@ -64,13 +64,14 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (didAuthenticate) {
-        // Kayıtlı şifreyi getir
-        final savedPassword = await _secureStorage.read(key: 'user_password_${_usernameCtrl.text}');
+        // Kayıtlı şifreyi getir (Email'i anahtar olarak kullanıyoruz)
+        final email = _usernameCtrl.text.trim().toLowerCase();
+        final savedPassword = await _secureStorage.read(key: 'user_password_$email');
         if (savedPassword != null) {
           _passwordCtrl.text = savedPassword;
           _submit(isBiometric: true);
         } else {
-          _snack('Biyometrik giriş için önce şifre ile giriş yapmalısınız.');
+          _snack('Biyometrik giriş için önce şifrenizle normal bir giriş yapmalısınız (Beni Hatırla seçili iken).');
         }
       }
     } catch (e) {
@@ -102,9 +103,10 @@ class _LoginPageState extends State<LoginPage> {
 
       await SessionService().save(user, rememberMe: _rememberMe);
       
-      // Şifreyi güvenli depolamaya kaydet (Biyometrik için)
+      // Şifreyi güvenli depolamaya kaydet (Email anahtarı ile)
       if (_rememberMe) {
-        await _secureStorage.write(key: 'user_password_${_usernameCtrl.text}', value: _passwordCtrl.text);
+        final email = user.email.trim().toLowerCase();
+        await _secureStorage.write(key: 'user_password_$email', value: _passwordCtrl.text);
       }
 
       if (!mounted) return;

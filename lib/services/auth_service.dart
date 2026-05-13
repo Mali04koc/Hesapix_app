@@ -64,7 +64,7 @@ class AuthService {
         'son_giriş_tarihi': FieldValue.serverTimestamp(),
       });
 
-      return AuthUser(id: doc.id, username: displayName, role: role);
+      return AuthUser(id: doc.id, username: displayName, email: email, role: role);
     }
 
     await _auth.signOut();

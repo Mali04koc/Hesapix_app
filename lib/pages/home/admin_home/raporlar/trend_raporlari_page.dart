@@ -82,91 +82,96 @@ class _TrendRaporlariPageState extends State<TrendRaporlariPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Günlük Ciro Trendi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 300,
-                    padding: const EdgeInsets.only(right: 16, left: 0, top: 24, bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 2, blurRadius: 5)
-                      ]
-                    ),
-                    child: LineChart(
-                      LineChartData(
-                        gridData: const FlGridData(show: true, drawVerticalLine: false),
-                        titlesData: FlTitlesData(
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 30,
-                              getTitlesWidget: (value, meta) {
-                                int index = value.toInt();
-                                if (index < 0 || index >= veriler.length) return const Text('');
-                                // Çok fazla gün varsa sadece belirli aralıklarla göster (Örn. 5 günde 1)
-                                if (veriler.length > 10 && index % 5 != 0 && index != veriler.length - 1) return const Text('');
-                                
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(veriler[index].key, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                                );
-                              },
+          : SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Günlük Ciro Trendi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 300,
+                      padding: const EdgeInsets.only(right: 20, left: 4, top: 24, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 2, blurRadius: 5)
+                        ]
+                      ),
+                      child: LineChart(
+                        LineChartData(
+                          gridData: const FlGridData(show: true, drawVerticalLine: false),
+                          titlesData: FlTitlesData(
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 32,
+                                getTitlesWidget: (value, meta) {
+                                  int index = value.toInt();
+                                  if (index < 0 || index >= veriler.length) return const Text('');
+                                  if (veriler.length > 10 && index % 5 != 0 && index != veriler.length - 1) return const Text('');
+                                  
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    space: 8,
+                                    child: Text(veriler[index].key, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                  );
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 44,
+                                getTitlesWidget: (value, meta) {
+                                  if (value == maxY) return const Text('');
+                                  return Text(
+                                    value >= 1000 ? '${(value/1000).toStringAsFixed(1)}k' : value.toStringAsFixed(0), 
+                                    style: const TextStyle(color: Colors.grey, fontSize: 10)
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 40,
-                              getTitlesWidget: (value, meta) {
-                                if (value == maxY) return const Text('');
-                                return Text(
-                                  value >= 1000 ? '${(value/1000).toStringAsFixed(1)}k' : value.toStringAsFixed(0), 
-                                  style: const TextStyle(color: Colors.grey, fontSize: 10)
-                                );
-                              },
+                          borderData: FlBorderData(show: false),
+                          minX: 0,
+                          maxX: (veriler.length - 1).toDouble(),
+                          minY: 0,
+                          maxY: maxY,
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: satisNoktalari,
+                              isCurved: true,
+                              color: HesapixColors.primary,
+                              barWidth: 3,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: HesapixColors.primary.withOpacity(0.2),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        borderData: FlBorderData(show: false),
-                        minX: 0,
-                        maxX: (veriler.length - 1).toDouble(),
-                        minY: 0,
-                        maxY: maxY,
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: satisNoktalari,
-                            isCurved: true,
-                            color: HesapixColors.primary,
-                            barWidth: 3,
-                            isStrokeCapRound: true,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: HesapixColors.primary.withOpacity(0.2),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text('Trend Analiz Notu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Yukarıdaki grafik, son 30 güne ait günlük ciro hareketlerini göstermektedir. '
-                    'İşletmenin haftasonu/haftaiçi veya ayın belirli günlerinde yaşadığı dalgalanmaları buradan takip edebilirsiniz.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    const Text('Trend Analiz Notu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Yukarıdaki grafik, son 30 güne ait günlük ciro hareketlerini göstermektedir. '
+                      'İşletmenin haftasonu/haftaiçi veya ayın belirli günlerinde yaşadığı dalgalanmaları buradan takip edebilirsiniz.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 32), // Alt kısımda boşluk bırak
+                  ],
+                ),
               ),
             ),
     );

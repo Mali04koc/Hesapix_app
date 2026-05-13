@@ -152,11 +152,13 @@ class _CariListesi extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isBorclu ? Colors.green : Colors.red;
     
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
+        // Özet Kartı
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
@@ -172,30 +174,29 @@ class _CariListesi extends StatelessWidget {
             ],
           ),
         ),
-        Expanded(
-          child: cariler.isEmpty
-              ? const Center(child: Text('Kayıt bulunamadı.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: cariler.length,
-                  itemBuilder: (context, index) {
-                    final c = cariler[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: color.withOpacity(0.2),
-                          child: Icon(Icons.business, color: color),
-                        ),
-                        title: Text(c.firmaAdi, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(c.cariKodu),
-                        trailing: Text('₺${c.bakiye.abs().toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
-                        onTap: () => onCariTap(c),
-                      ),
-                    );
-                  },
+        
+        // Liste Başlığı (Opsiyonel)
+        if (cariler.isEmpty)
+          const Center(child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: Text('Kayıt bulunamadı.'),
+          ))
+        else
+          ...cariler.map((c) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: color.withOpacity(0.2),
+                  child: Icon(Icons.business, color: color),
                 ),
-        ),
+                title: Text(c.firmaAdi, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(c.cariKodu),
+                trailing: Text('₺${c.bakiye.abs().toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
+                onTap: () => onCariTap(c),
+              ),
+            );
+          }),
       ],
     );
   }

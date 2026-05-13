@@ -15,7 +15,7 @@ class SessionService {
     await prefs.setBool(_kIsRemembered, rememberMe);
 
     // Her durumda son giren kullanıcıyı hatırla (Identity memory)
-    await prefs.setString(_kLastUserEmail, user.username); // Burada username email olabilir
+    await prefs.setString(_kLastUserEmail, user.email); 
     await prefs.setString(_kLastUserName, user.username);
 
     if (!rememberMe) {
@@ -49,10 +49,12 @@ class SessionService {
 
     final id = prefs.getString(_kUserId);
     final username = prefs.getString(_kUsername);
+    final email = prefs.getString(_kLastUserEmail); // Email'i son girenlerden alıyoruz
     final role = prefs.getString(_kRole);
-    if (id == null || username == null || role == null) return null;
 
-    return AuthUser(id: id, username: username, role: role);
+    if (id == null || username == null || role == null || email == null) return null;
+
+    return AuthUser(id: id, username: username, email: email, role: role);
   }
 
   Future<void> clear() async {
