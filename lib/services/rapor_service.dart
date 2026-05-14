@@ -9,7 +9,9 @@ import '../models/urun_model.dart';
 import '../models/app_user_model.dart';
 
 class RaporService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  RaporService({FirebaseFirestore? db}) : _firestore = db ?? FirebaseFirestore.instance;
 
   Future<List<Satis>> getSatislar(DateTime baslangic, DateTime bitis) async {
     final snapshot = await _firestore

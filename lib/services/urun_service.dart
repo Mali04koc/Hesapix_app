@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/urun_model.dart';
 
 class UrunService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  UrunService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Ürün Ekleme
   Future<void> addUrun(Urun urun) async {

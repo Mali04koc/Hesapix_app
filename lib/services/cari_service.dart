@@ -3,7 +3,9 @@ import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/cari_hareket_model.dart';
 
 class CariService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  CariService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Cari Ekleme
   Future<void> addCari(Cari cari) async {
