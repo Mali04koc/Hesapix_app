@@ -3,7 +3,9 @@ import '../models/alis_model.dart';
 import '../models/alis_detay_model.dart';
 
 class AlisService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  AlisService({FirebaseFirestore? db}) : _firestore = db ?? FirebaseFirestore.instance;
 
   // Yeni Fatura Numarası Üretme (Basit bir zaman bazlı ID)
   String _generateFaturaNo() {

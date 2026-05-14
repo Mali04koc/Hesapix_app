@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
 
 class KategoriService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  KategoriService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Kategori Ekleme
   Future<void> addKategori(Kategori kategori) async {

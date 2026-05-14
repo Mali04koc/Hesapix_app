@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/masraf_model.dart';
 
 class MasrafService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  MasrafService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Masraf Ekleme
   Future<void> addMasraf(Masraf masraf) async {

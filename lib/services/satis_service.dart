@@ -3,7 +3,9 @@ import '../models/satis_model.dart';
 import '../models/satis_detay_model.dart';
 
 class SatisService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  SatisService({FirebaseFirestore? db}) : _firestore = db ?? FirebaseFirestore.instance;
 
   // Yeni Fatura Numarası Üretme (Basit bir zaman bazlı ID)
   String _generateFaturaNo() {
