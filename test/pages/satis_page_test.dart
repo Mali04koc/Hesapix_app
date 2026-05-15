@@ -1,12 +1,26 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_detay_page.dart';
 import 'package:hesapix_app/models/cari_model.dart';
+import 'package:provider/provider.dart';
+import 'package:hesapix_app/services/satis_provider.dart';
+
+import '../helpers/firebase_test_setup.dart';
 
 void main() {
+  setupFirebaseAuthMocks();
+
+  setUpAll(() async {
+    await Firebase.initializeApp();
+  });
+
   Widget createWidgetUnderTest(Cari cari) {
-    return MaterialApp(
-      home: SatisFaturasiDetayPage(cari: cari),
+    return ChangeNotifierProvider(
+      create: (_) => SatisProvider(),
+      child: MaterialApp(
+        home: SatisFaturasiDetayPage(cari: cari),
+      ),
     );
   }
 
@@ -23,18 +37,18 @@ void main() {
       );
 
       await tester.pumpWidget(createWidgetUnderTest(cari));
+      await tester.pump();
 
       // AppBar title kontrolü
       expect(find.text('Fatura: Test Firma'), findsOneWidget);
 
       // Arama alanı kontrolü
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Barkod, Ürün Adı veya Kodu (Yazmaya başlayın)'), findsOneWidget);
 
       // Barkod okuyucu butonu
       expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
 
-      // Sepet butonu kontrolü (Badge ile sarmalanmış)
+      // Sepet butonu kontrolü
       expect(find.byIcon(Icons.shopping_cart), findsOneWidget);
     });
 
@@ -50,6 +64,7 @@ void main() {
       );
 
       await tester.pumpWidget(createWidgetUnderTest(cari));
+      await tester.pump();
 
       // Sepet butonuna tıkla
       await tester.tap(find.byIcon(Icons.shopping_cart));

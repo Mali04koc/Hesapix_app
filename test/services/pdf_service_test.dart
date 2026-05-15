@@ -5,6 +5,7 @@ import 'package:hesapix_app/models/satis_detay_model.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('PdfService Testleri', () {
     test('generateSatisFaturasiPdf() geçerli bir Uint8List döndürmeli', () async {
       final satis = Satis(

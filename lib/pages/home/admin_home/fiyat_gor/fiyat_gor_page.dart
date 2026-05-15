@@ -244,8 +244,15 @@ class _FiyatGorPageState extends State<FiyatGorPage> {
   }
 }
 
-class BarcodeScannerPage extends StatelessWidget {
+class BarcodeScannerPage extends StatefulWidget {
   const BarcodeScannerPage({super.key});
+
+  @override
+  State<BarcodeScannerPage> createState() => _BarcodeScannerPageState();
+}
+
+class _BarcodeScannerPageState extends State<BarcodeScannerPage> {
+  bool _isScanCompleted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -256,11 +263,14 @@ class BarcodeScannerPage extends StatelessWidget {
       ),
       body: MobileScanner(
         onDetect: (barcodeCapture) {
+          if (_isScanCompleted) return;
+
           if (barcodeCapture.barcodes.isNotEmpty) {
             final barcode = barcodeCapture.barcodes.first;
             final String? code = barcode.rawValue;
 
             if (code != null) {
+              _isScanCompleted = true;
               Navigator.pop(context, code);
             }
           }
@@ -269,3 +279,4 @@ class BarcodeScannerPage extends StatelessWidget {
     );
   }
 }
+
