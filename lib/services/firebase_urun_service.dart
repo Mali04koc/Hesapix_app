@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/urun_model.dart';
+import 'package:hesapix_app/services/interfaces/i_urun_service.dart';
 
-class UrunService {
+class FirebaseUrunService implements IUrunService {
   final FirebaseFirestore _db;
 
-  UrunService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  FirebaseUrunService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Ürün Ekleme
   Future<void> addUrun(Urun urun) async {
@@ -35,7 +36,11 @@ class UrunService {
       tedarikciKodu: urun.tedarikciKodu,
     );
 
-    await _db.collection('urunler').add(newUrun.toMap());
+    if (newUrun.id != null) {
+      await _db.collection('urunler').doc(newUrun.id).set(newUrun.toMap());
+    } else {
+      await _db.collection('urunler').add(newUrun.toMap());
+    }
   }
 
   // Tüm Ürünleri Getirme

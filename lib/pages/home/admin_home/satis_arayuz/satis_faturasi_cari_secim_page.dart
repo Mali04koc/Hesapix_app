@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/cari_model.dart';
-import 'package:hesapix_app/services/cari_service.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_cari_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/dialogs/cari_dialog.dart';
 import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_detay_page.dart';
@@ -13,7 +14,7 @@ class SatisFaturasiCariSecimPage extends StatefulWidget {
 }
 
 class _SatisFaturasiCariSecimPageState extends State<SatisFaturasiCariSecimPage> {
-  final CariService _cariService = CariService();
+  final ICariService _cariService = ServiceLocator.cariService;
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
   late Stream<List<Cari>> _carilerStream;

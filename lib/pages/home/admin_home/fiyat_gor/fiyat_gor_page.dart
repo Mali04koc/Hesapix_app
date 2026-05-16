@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:hesapix_app/models/urun_model.dart';
-import 'package:hesapix_app/services/urun_service.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_urun_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 
 class FiyatGorPage extends StatefulWidget {
@@ -12,7 +13,7 @@ class FiyatGorPage extends StatefulWidget {
 }
 
 class _FiyatGorPageState extends State<FiyatGorPage> {
-  final UrunService _urunService = UrunService();
+  final IUrunService _urunService = ServiceLocator.urunService;
   final TextEditingController _aramaCtrl = TextEditingController();
   
   bool _isLoading = false;

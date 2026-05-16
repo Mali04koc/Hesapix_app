@@ -91,7 +91,16 @@ class _CariDialogState extends State<CariDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _mailCtrl,
+                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: 'Mail Adresi', border: OutlineInputBorder()),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return null;
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(val)) {
+                    return 'Geçerli bir mail adresi giriniz';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(

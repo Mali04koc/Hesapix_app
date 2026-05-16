@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/cari_hareket_model.dart';
-import 'package:hesapix_app/services/cari_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/dialogs/cari_dialog.dart';
 import 'package:hesapix_app/pages/home/admin_home/cari_yonetimi/dialogs/cari_hareket_dialog.dart';
+import 'package:hesapix_app/services/migration_service.dart';
+
+import 'package:hesapix_app/core/database/database_manager.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_cari_service.dart';
 
 class CariYonetimiPage extends StatefulWidget {
   const CariYonetimiPage({super.key});
@@ -15,7 +19,7 @@ class CariYonetimiPage extends StatefulWidget {
 }
 
 class _CariYonetimiPageState extends State<CariYonetimiPage> {
-  final CariService _cariService = CariService();
+  late ICariService _cariService;
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
   late Stream<List<Cari>> _carilerStream;
@@ -23,6 +27,7 @@ class _CariYonetimiPageState extends State<CariYonetimiPage> {
   @override
   void initState() {
     super.initState();
+    _cariService = ServiceLocator.cariService;
     _carilerStream = _cariService.getCariler();
   }
 
@@ -218,6 +223,34 @@ class _CariYonetimiPageState extends State<CariYonetimiPage> {
         title: const Text('Cari Yönetimi', style: TextStyle(fontWeight: FontWeight.bold, color: HesapixColors.primary)),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: HesapixColors.primary),
+        actions: [
+          ListenableBuilder(
+            listenable: DatabaseManager(),
+            builder: (context, _) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: FilterChip(
+                  label: Text(DatabaseManager().isPostgres ? 'PostgreSQL' : 'Firebase'),
+                  selected: DatabaseManager().isPostgres,
+                  onSelected: (bool selected) {
+                    DatabaseManager().setDatabase(
+                        selected ? DatabaseType.postgres : DatabaseType.firebase);
+                    // Sayfayı yeni veritabanıyla yenile
+                    setState(() {
+                      _cariService = ServiceLocator.cariService;
+                      _carilerStream = _cariService.getCariler();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Veritabanı değiştirildi: ${selected ? "PostgreSQL" : "Firebase"}')),
+                    );
+                  },
+                  selectedColor: Colors.blue.shade100,
+                  checkmarkColor: Colors.blue,
+                ),
+              );
+            },
+          )
+        ],
       ),
       body: Column(
         children: [

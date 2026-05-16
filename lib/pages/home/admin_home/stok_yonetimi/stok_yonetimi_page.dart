@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/kategori_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
 import 'package:hesapix_app/services/kategori_service.dart';
-import 'package:hesapix_app/services/urun_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/kategori_dialog.dart';
 import 'package:hesapix_app/pages/home/admin_home/stok_yonetimi/dialogs/urun_dialog.dart';
+import 'package:hesapix_app/core/database/database_manager.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_urun_service.dart';
 
 class StokYonetimiPage extends StatefulWidget {
   const StokYonetimiPage({super.key});
@@ -17,7 +19,7 @@ class StokYonetimiPage extends StatefulWidget {
 class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final KategoriService _kategoriService = KategoriService();
-  final UrunService _urunService = UrunService();
+  late IUrunService _urunService;
 
   List<Kategori> _kategoriler = [];
   String _urunSearchQuery = '';
@@ -31,6 +33,7 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
     _kategoriService.getKategoriler().listen((data) {
       if (mounted) setState(() => _kategoriler = data);
     });
+    _urunService = ServiceLocator.urunService;
     _urunlerStream = _urunService.getUrunler();
   }
 
@@ -286,6 +289,33 @@ class _StokYonetimiPageState extends State<StokYonetimiPage> with SingleTickerPr
         title: const Text('Stok Yönetimi', style: TextStyle(fontWeight: FontWeight.bold, color: HesapixColors.primary)),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: HesapixColors.primary),
+        actions: [
+          ListenableBuilder(
+            listenable: DatabaseManager(),
+            builder: (context, _) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: FilterChip(
+                  label: Text(DatabaseManager().isPostgres ? 'PostgreSQL' : 'Firebase'),
+                  selected: DatabaseManager().isPostgres,
+                  onSelected: (bool selected) {
+                    DatabaseManager().setDatabase(
+                        selected ? DatabaseType.postgres : DatabaseType.firebase);
+                    setState(() {
+                      _urunService = ServiceLocator.urunService;
+                      _urunlerStream = _urunService.getUrunler();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Veritabanı değiştirildi: ${selected ? "PostgreSQL" : "Firebase"}')),
+                    );
+                  },
+                  selectedColor: Colors.blue.shade100,
+                  checkmarkColor: Colors.blue,
+                ),
+              );
+            },
+          )
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: HesapixColors.primary,

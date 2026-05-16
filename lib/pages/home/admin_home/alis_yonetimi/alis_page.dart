@@ -4,8 +4,9 @@ import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/services/alis_provider.dart';
 import 'package:hesapix_app/services/alis_service.dart';
 import 'package:hesapix_app/services/pdf_service.dart';
-import 'package:hesapix_app/services/urun_service.dart';
-import 'package:hesapix_app/services/cari_service.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_urun_service.dart';
+import 'package:hesapix_app/services/interfaces/i_cari_service.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
 import 'package:hesapix_app/models/alis_detay_model.dart';
@@ -23,8 +24,8 @@ class AlisPage extends StatefulWidget {
 class _AlisPageState extends State<AlisPage> {
   final TextEditingController _aramaCtrl = TextEditingController();
   final TextEditingController _odenenCtrl = TextEditingController();
-  final UrunService _urunService = UrunService();
-  final CariService _cariService = CariService();
+  final IUrunService _urunService = ServiceLocator.urunService;
+  final ICariService _cariService = ServiceLocator.cariService;
   final AlisService _alisService = AlisService();
   
   Cari? _seciliTedarikci;

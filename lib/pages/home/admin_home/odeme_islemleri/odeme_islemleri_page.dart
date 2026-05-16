@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/cari_hareket_model.dart';
-import 'package:hesapix_app/services/cari_service.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_cari_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 
 class OdemeIslemleriPage extends StatefulWidget {
@@ -15,7 +16,7 @@ class OdemeIslemleriPage extends StatefulWidget {
 
 class _OdemeIslemleriPageState extends State<OdemeIslemleriPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final CariService _cariService = CariService();
+  final ICariService _cariService = ServiceLocator.cariService;
 
   @override
   void initState() {
@@ -63,7 +64,7 @@ class _OdemeIslemleriPageState extends State<OdemeIslemleriPage> with SingleTick
 
 class _OdemeForm extends StatefulWidget {
   final String islemTipi;
-  final CariService cariService;
+  final ICariService cariService;
 
   const _OdemeForm({required this.islemTipi, required this.cariService});
 
@@ -256,7 +257,7 @@ class _OdemeFormState extends State<_OdemeForm> {
 }
 
 class _IslemGecmisi extends StatelessWidget {
-  final CariService cariService;
+  final ICariService cariService;
   const _IslemGecmisi({required this.cariService});
 
   String _islemAdi(String tip) {

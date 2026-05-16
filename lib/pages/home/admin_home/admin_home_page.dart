@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/app_routes.dart';
 import 'package:hesapix_app/services/session_service.dart';
+import 'package:hesapix_app/core/database/database_manager.dart';
+import 'package:hesapix_app/services/migration_service.dart';
+import 'package:hesapix_app/theme/hesapix_colors.dart';
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
@@ -29,6 +32,54 @@ class AdminHomePage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          ListenableBuilder(
+            listenable: DatabaseManager(),
+            builder: (context, _) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.sync, color: Colors.blueAccent),
+                    tooltip: 'Verileri Eşitle (Firebase <-> Postgres)',
+                    onPressed: () async {
+                      try {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Eşitleme başladı...')),
+                        );
+                        await MigrationService.syncTwoWay();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Eşitleme başarıyla tamamlandı!')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Eşitleme hatası: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  FilterChip(
+                    label: Text(DatabaseManager().isPostgres ? 'PostgreSQL' : 'Firebase'),
+                    selected: DatabaseManager().isPostgres,
+                    onSelected: (val) {
+                      DatabaseManager().setDatabase(
+                        val ? DatabaseType.postgres : DatabaseType.firebase
+                      );
+                    },
+                    selectedColor: Colors.blue.shade100,
+                    checkmarkColor: Colors.blue,
+                  ),
+                ],
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Çıkış Yap',
             onPressed: () async {
