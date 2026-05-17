@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/urun_model.dart';
-import 'package:hesapix_app/services/urun_service.dart';
+import 'package:hesapix_app/core/database/service_locator.dart';
+import 'package:hesapix_app/services/interfaces/i_urun_service.dart';
 import 'package:hesapix_app/theme/hesapix_colors.dart';
 import 'package:hesapix_app/pages/home/admin_home/fiyat_gor/fiyat_gor_page.dart'; // BarcodeScannerPage için
 import 'package:hesapix_app/pages/home/admin_home/satis_arayuz/satis_faturasi_odeme_page.dart';
@@ -16,7 +17,7 @@ class SatisFaturasiDetayPage extends StatefulWidget {
 }
 
 class _SatisFaturasiDetayPageState extends State<SatisFaturasiDetayPage> {
-  final UrunService _urunService = UrunService();
+  final IUrunService _urunService = ServiceLocator.urunService;
   final TextEditingController _aramaCtrl = TextEditingController();
   
   bool _isLoading = false;

@@ -28,7 +28,7 @@ void main() {
       expect(userModel.uid, 'uid123');
       expect(userModel.adSoyad, 'Test Kullanıcı');
       expect(userModel.email, 'test@test.com');
-      // readRoleFromData yardımcı fonksiyonuna bağlı olarak rol döner
+      expect(userModel.rol, 'Admin');
       expect(userModel.aktif, true);
       expect(userModel.sonGirisTarihi, tarih);
       expect(userModel.olusturulmaTarihi, tarih);

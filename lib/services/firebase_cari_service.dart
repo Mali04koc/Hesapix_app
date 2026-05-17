@@ -1,15 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hesapix_app/models/cari_model.dart';
 import 'package:hesapix_app/models/cari_hareket_model.dart';
+import 'package:hesapix_app/services/interfaces/i_cari_service.dart';
 
-class CariService {
+class FirebaseCariService implements ICariService {
   final FirebaseFirestore _db;
 
-  CariService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  FirebaseCariService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Yeni Cari Ekleme
   Future<void> addCari(Cari cari) async {
-    await _db.collection('cariler').add(cari.toMap());
+    if (cari.id != null) {
+      await _db.collection('cariler').doc(cari.id).set(cari.toMap());
+    } else {
+      await _db.collection('cariler').add(cari.toMap());
+    }
   }
 
   // Cari Arama
@@ -44,7 +49,11 @@ class CariService {
 
   // Yeni Cari Hareket Ekleme
   Future<void> addHareket(CariHareket hareket) async {
-    await _db.collection('cari_hareketler').add(hareket.toMap());
+    if (hareket.id != null) {
+      await _db.collection('cari_hareketler').doc(hareket.id).set(hareket.toMap());
+    } else {
+      await _db.collection('cari_hareketler').add(hareket.toMap());
+    }
 
     double bakiyeEtkisi = 0;
     switch (hareket.islemTipi) {

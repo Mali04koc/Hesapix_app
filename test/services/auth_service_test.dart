@@ -77,5 +77,45 @@ void main() {
         throwsA(isA<AuthException>()),
       );
     });
+
+    test('Firestore profili yoksa hata vermeli', () async {
+      const email = 'orphan@test.com';
+      final user = MockUser(uid: 'uid_orphan', email: email);
+      mockAuth = MockFirebaseAuth(mockUser: user);
+      authService = AuthService(db: fakeFirestore, auth: mockAuth);
+
+      expect(
+        () => authService.login(usernameOrEmail: email, password: 'pass'),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('profili bulunamadı'),
+          ),
+        ),
+      );
+    });
+
+    test('Kasiyer rolü ile giriş Kasiyer döndürmeli', () async {
+      const email = 'kasiyer@test.com';
+      final user = MockUser(uid: 'uid_k', email: email);
+      mockAuth = MockFirebaseAuth(mockUser: user);
+      authService = AuthService(db: fakeFirestore, auth: mockAuth);
+
+      await fakeFirestore.collection('kullanicilar').doc('uid_k').set({
+        'uid': 'uid_k',
+        'email': email,
+        'ad_soyad': 'Kasiyer User',
+        'rol': 'Kasiyer',
+        'aktif': true,
+      });
+
+      final authUser = await authService.login(
+        usernameOrEmail: email,
+        password: 'password123',
+      );
+
+      expect(authUser.role, 'Kasiyer');
+    });
   });
 }

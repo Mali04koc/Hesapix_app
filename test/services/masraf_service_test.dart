@@ -75,5 +75,30 @@ void main() {
       expect(snapshot.data()!['tutar'], 1100.0);
       expect(snapshot.data()!['aciklama'], 'Zamlı kira');
     });
+
+    test('deleteMasraf() kaydı silmeli', () async {
+      final docRef = await fakeFirestore.collection('masraflar').add({
+        'tip': 'kira',
+        'tutar': 500.0,
+      });
+
+      await masrafService.deleteMasraf(docRef.id);
+
+      final snap = await docRef.get();
+      expect(snap.exists, isFalse);
+    });
+
+    test('getMasraflar() tüm masrafları stream ile döndürmeli', () async {
+      await fakeFirestore.collection('masraflar').add({
+        'masraf_id': 1,
+        'tip': 'kira',
+        'tutar': 100.0,
+        'tarih': DateTime.now().toIso8601String(),
+        'aciklama': '',
+      });
+
+      final list = await masrafService.getMasraflar().first;
+      expect(list.length, 1);
+    });
   });
 }

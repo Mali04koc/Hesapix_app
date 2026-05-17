@@ -87,5 +87,55 @@ void main() {
       expect(provider.kdvToplam, closeTo(18.0, 0.1));
       expect(provider.genelToplam, closeTo(118.0, 0.1));
     });
+
+    test('setCariId, setOdemeTuru, setIskonto çalışmalı', () {
+      provider.setCariId('c99');
+      provider.setOdemeTuru('Açık Hesap');
+      provider.setIskonto(50);
+
+      expect(provider.seciliCariId, 'c99');
+      expect(provider.odemeTuru, 'Açık Hesap');
+      expect(provider.iskonto, 50);
+    });
+
+    test('sepetiTemizle() tüm sepeti sıfırlamalı', () {
+      final urun = Urun(
+        id: 'u1',
+        urunId: 1,
+        isim: 'Test',
+        kategoriId: 'k1',
+        alisFiyat: 100,
+        satisFiyat: 150,
+        stok: 10,
+        barkod: '',
+        gorsel: '',
+        urunKodu: '',
+        tedarikciKodu: '',
+      );
+      provider.sepeteEkle(urun);
+      provider.sepetiTemizle();
+
+      expect(provider.sepet, isEmpty);
+      expect(provider.genelToplam, 0);
+    });
+
+    test('miktar 0 olunca ürün sepetten çıkar', () {
+      final urun = Urun(
+        id: 'u1',
+        urunId: 1,
+        isim: 'Test',
+        kategoriId: 'k1',
+        alisFiyat: 100,
+        satisFiyat: 150,
+        stok: 10,
+        barkod: '',
+        gorsel: '',
+        urunKodu: '',
+        tedarikciKodu: '',
+      );
+      provider.sepeteEkle(urun);
+      provider.miktarGuncelle('u1', 0);
+      expect(provider.sepet, isEmpty);
+    });
   });
 }

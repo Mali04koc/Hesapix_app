@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/alis_model.dart';
 import '../models/alis_detay_model.dart';
+import '../core/database/postgres_connection.dart';
 
 class AlisService {
   final FirebaseFirestore _firestore;
@@ -86,24 +87,48 @@ class AlisService {
         kasiyerId: kasiyerId,
       );
       
-      transaction.set(alisRef, yeniAlis.toMap());
+      await transaction.set(alisRef, yeniAlis.toMap());
+
+      // Postgres Dual-Write
+      try {
+        final conn = await PostgresConnection().getConnection();
+        await conn.execute(
+          'INSERT INTO alislar (id, cari_id, tarih, fatura_no, ara_toplam, kdv_toplam, iskonto, genel_toplam, odeme_turu, odenen_tutar, kasiyer_id) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11)',
+          parameters: [yeniAlis.id, yeniAlis.cariId, yeniAlis.tarih, yeniAlis.faturaNo, yeniAlis.araToplam, yeniAlis.kdvToplam, yeniAlis.iskonto, yeniAlis.genelToplam, yeniAlis.odemeTuru, yeniAlis.odenenTutar, yeniAlis.kasiyerId],
+        );
+      } catch (e) {}
 
       // Alış Detaylarını Ekle ve Stokları Artır
       for (var item in sepet) {
         final detayRef = _firestore.collection('alis_detaylari').doc();
         final detayMap = item.toMap();
         detayMap['alis_id'] = alisRef.id; // İlişkiyi kur
-        transaction.set(detayRef, detayMap);
+        await transaction.set(detayRef, detayMap);
+
+        // Postgres Detay Dual-Write
+        try {
+          final conn = await PostgresConnection().getConnection();
+          await conn.execute(
+            'INSERT INTO alis_detaylari (id, alis_id, urun_id, urun_adi, miktar, birim_fiyat, kdv_orani, ara_toplam, kdv_tutar, toplam) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10)',
+            parameters: [detayRef.id, alisRef.id, item.urunId, item.urunAdi, item.miktar, item.birimFiyat, item.kdvOrani, item.araToplam, item.kdvTutar, item.toplam],
+          );
+        } catch (e) {}
         
         // STOK ARTIR
         final ref = urunRefs[item.urunId]!;
         final yeniStok = mevcutStoklar[item.urunId]! + item.miktar;
         
         // İsteğe bağlı: Son alış fiyatını da güncelleyebiliriz
-        transaction.update(ref, {
+        await transaction.update(ref, {
           'stok': yeniStok,
           'alis_fiyati': item.birimFiyat, // Maliyet güncelleme (basit)
         });
+
+        // Postgres Stok Artır
+        try {
+          final conn = await PostgresConnection().getConnection();
+          await conn.execute('UPDATE urunler SET stok = stok + \$1 WHERE id = \$2', parameters: [item.miktar, item.urunId]);
+        } catch (e) {}
       }
 
       // Cari Hareket ve Bakiye Güncelleme (Sadece Açık Hesap ise VEYA kısmi ödeme varsa borç yazılmalı)
@@ -112,22 +137,34 @@ class AlisService {
       if (kalanBorc < 0) kalanBorc = 0;
 
       if (kalanBorc > 0 && cariRef != null) {
-        // Alış işleminde biz tedarikçiye borçlanırız, yani bakiye düşer (eksi yönde)
-        // Cari bizim için alacaklı olur
         final yeniBakiye = mevcutBakiye - kalanBorc;
-        transaction.update(cariRef, {'bakiye': yeniBakiye});
+        await transaction.update(cariRef, {'bakiye': yeniBakiye});
+
+        // Postgres Bakiye
+        try {
+          final conn = await PostgresConnection().getConnection();
+          await conn.execute('UPDATE cariler SET bakiye = bakiye - \$1 WHERE id = \$2', parameters: [kalanBorc, cariId]);
+        } catch (e) {}
         
         final hareketRef = _firestore.collection('cari_hareketler').doc();
         final hareketData = {
           'cari_id': cariId,
           'islem_tipi': 'Alış Faturası (Borç)',
-          'tarih': FieldValue.serverTimestamp(),
+          'tarih': DateTime.now(),
           'tutar': kalanBorc,
-          'aciklama': '$faturaNo numaralı Alış Faturası Borç Kaydı',
+          'aciklama': '\$faturaNo numaralı Alış Faturası Borç Kaydı',
         };
-        transaction.set(hareketRef, hareketData);
-      } 
-      
+        await transaction.set(hareketRef, hareketData);
+
+        // Postgres Hareket
+        try {
+          final conn = await PostgresConnection().getConnection();
+          await conn.execute(
+            'INSERT INTO cari_hareketler (id, cari_id, islem_tipi, tarih, tutar, aciklama) VALUES (\$1, \$2, \$3, \$4, \$5, \$6)',
+            parameters: [hareketRef.id, cariId, 'ALIS', DateTime.now(), kalanBorc, '\$faturaNo numaralı Alış Faturası Borç Kaydı'],
+          );
+        } catch (e) {}
+      }       
       // Nakit/Kart tahsilat kısmı, eğer istersen burada kasa hareketine işlenebilir.
       if (odenenTutar > 0) {
         // Örn: Kasa / Banka Hareketi
@@ -135,5 +172,17 @@ class AlisService {
       
       return yeniAlis;
     });
+  }
+
+  // Tüm Alışları Getirme
+  Stream<List<Alis>> getAlislar() {
+    return _firestore.collection('alislar').orderBy('tarih', descending: true).snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => Alis.fromMap(doc.data(), doc.id)).toList());
+  }
+
+  // TÜM Alış Detaylarını Getirme (Senkronizasyon için)
+  Stream<List<AlisDetay>> getAllAlisDetaylari() {
+    return _firestore.collection('alis_detaylari').snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => AlisDetay.fromMap(doc.data(), doc.id)).toList());
   }
 }
