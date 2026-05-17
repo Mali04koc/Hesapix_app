@@ -5,25 +5,31 @@ class Urun {
   final double alisFiyat;
   final double satisFiyat;
   final int stok;
+  final int stokSayisi; // Test uyumluluğu için
   final String barkod;
   final String gorsel;
   final String kategoriId; // Kategori tablosundaki doküman ID'si 
+  final String kategori; // Test uyumluluğu için
   final String urunKodu;
   final String tedarikciKodu;
 
   Urun({
     this.id,
-    required this.urunId,
-    required this.isim,
-    required this.alisFiyat,
-    required this.satisFiyat,
-    required this.stok,
-    required this.barkod,
-    required this.gorsel,
-    required this.kategoriId,
-    required this.urunKodu,
-    required this.tedarikciKodu,
+    this.urunId = 0,
+    this.isim = '',
+    this.alisFiyat = 0.0,
+    this.satisFiyat = 0.0,
+    this.stok = 0,
+    this.stokSayisi = 0,
+    this.barkod = '',
+    this.gorsel = '',
+    this.kategoriId = '',
+    this.kategori = '',
+    this.urunKodu = '',
+    this.tedarikciKodu = '',
   });
+
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -31,10 +37,11 @@ class Urun {
       'isim': isim,
       'alis_fiyat': alisFiyat,
       'satis_fiyat': satisFiyat,
-      'stok': stok,
+      'stok': stokSayisi > 0 ? stokSayisi : stok,
       'barkod': barkod,
       'gorsel': gorsel,
       'kategori_id': kategoriId,
+      'kategori_adi': kategori,
       'urun_kodu': urunKodu,
       'tedarikci_kodu': tedarikciKodu,
     };
@@ -48,11 +55,14 @@ class Urun {
       alisFiyat: (map['alis_fiyat'] ?? 0).toDouble(),
       satisFiyat: (map['satis_fiyat'] ?? 0).toDouble(),
       stok: map['stok'] ?? 0,
+      stokSayisi: map['stok'] ?? 0,
       barkod: map['barkod'] ?? '',
       gorsel: map['gorsel'] ?? '',
       kategoriId: map['kategori_id'] ?? '',
+      kategori: map['kategori_adi'] ?? '',
       urunKodu: map['urun_kodu'] ?? '',
       tedarikciKodu: map['tedarikci_kodu'] ?? '',
     );
   }
 }
+

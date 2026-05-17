@@ -4,27 +4,22 @@ import 'package:hesapix_app/pages/home/admin_home/alis_yonetimi/alis_page.dart';
 import 'package:provider/provider.dart';
 import 'package:hesapix_app/services/alis_provider.dart';
 
+import '../helpers/widget_test_harness.dart';
+
 void main() {
-  Widget createWidgetUnderTest() {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AlisProvider()),
-      ],
-      child: const MaterialApp(
-        home: Scaffold(
-          body: AlisPage(),
-        ),
-      ),
-    );
-  }
+  setUpAll(() async {
+    await initWidgetTests();
+  });
 
   group('AlisPage Widget Testleri', () {
-    testWidgets('Sayfa temel UI elemanlarını yüklemeli', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
+    testWidgets('Sayfa başlığını göstermeli', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const AlisPage(),
+        providers: [ChangeNotifierProvider(create: (_) => AlisProvider())],
+      );
 
-      // Sayfa yüklenirken genel başlık veya bar olması beklenir.
-      // İçerisinde "Alış" kelimesi geçen temel appbar/başlık test edilir.
-      expect(find.textContaining('Alış'), findsWidgets);
+      expect(find.text('Alış Faturası (Tedarikçi)'), findsOneWidget);
     });
   });
 }

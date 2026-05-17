@@ -323,6 +323,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 12),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         SizedBox(
                           width: 22,
@@ -341,13 +342,15 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Beni hatırla',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: _textMuted,
+                        Flexible(
+                          child: Text(
+                            'Beni hatırla',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: _textMuted,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
                         TextButton(
                           onPressed: _loading
                               ? null
@@ -355,6 +358,7 @@ class _LoginPageState extends State<LoginPage> {
                                   .pushNamed(AppRoutes.forgotPassword),
                           style: TextButton.styleFrom(
                             foregroundColor: _navy,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -363,6 +367,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 20),
                     Row(
                       children: [

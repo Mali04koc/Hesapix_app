@@ -13,6 +13,18 @@ class PdfService {
   static final _currencyFormat = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
   static final _dateFormat = DateFormat('dd.MM.yyyy HH:mm');
 
+  static const _regularFontAsset = 'assets/fonts/Roboto-Regular.ttf';
+  static const _boldFontAsset = 'assets/fonts/Roboto-Bold.ttf';
+
+  static pw.Font? _regularFont;
+  static pw.Font? _boldFont;
+
+  static Future<(pw.Font base, pw.Font bold)> _loadFonts() async {
+    _regularFont ??= await fontFromAssetBundle(_regularFontAsset);
+    _boldFont ??= await fontFromAssetBundle(_boldFontAsset);
+    return (_regularFont!, _boldFont!);
+  }
+
   // Satış Faturası (PDF) Oluştur
   static Future<Uint8List> generateSatisFaturasiPdf({
     required Satis satis,
@@ -20,8 +32,7 @@ class PdfService {
     required Cari cari,
   }) async {
     final pdf = pw.Document();
-    final font = await PdfGoogleFonts.robotoRegular();
-    final boldFont = await PdfGoogleFonts.robotoBold();
+    final (font, boldFont) = await _loadFonts();
 
     pdf.addPage(
       pw.Page(
@@ -64,8 +75,7 @@ class PdfService {
     required Cari tedarikci,
   }) async {
     final pdf = pw.Document();
-    final font = await PdfGoogleFonts.robotoRegular();
-    final boldFont = await PdfGoogleFonts.robotoBold();
+    final (font, boldFont) = await _loadFonts();
 
     pdf.addPage(
       pw.Page(

@@ -48,5 +48,15 @@ void main() {
       final readUser = await sessionService.read();
       expect(readUser, isNull);
     });
+
+    test('forgetLastUser() son kullanıcı bilgisini temizlemeli', () async {
+      const user = AuthUser(id: '1', username: 'Test', email: 'test@test.com', role: 'Admin');
+      await sessionService.save(user, rememberMe: false);
+
+      await sessionService.forgetLastUser();
+
+      final last = await sessionService.getLastUser();
+      expect(last, isNull);
+    });
   });
 }

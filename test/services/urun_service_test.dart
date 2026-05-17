@@ -95,5 +95,86 @@ void main() {
       expect(sonuclar2.length, 1);
       expect(sonuclar2.first.isim, 'Armut');
     });
+
+    test('updateUrun() ve deleteUrun() çalışmalı', () async {
+      final docRef = await fakeFirestore.collection('urunler').add({
+        'urun_id': 1,
+        'isim': 'Eski',
+        'stok': 5,
+        'alis_fiyat': 1,
+        'satis_fiyat': 2,
+        'kategori_id': 'k1',
+        'urun_kodu': 'U1',
+        'tedarikci_kodu': '',
+        'barkod': '',
+        'gorsel': '',
+      });
+
+      await urunService.updateUrun(
+        Urun(
+          id: docRef.id,
+          urunId: 1,
+          isim: 'Yeni',
+          alisFiyat: 1,
+          satisFiyat: 2,
+          stok: 5,
+          barkod: '',
+          gorsel: '',
+          kategoriId: 'k1',
+          urunKodu: 'U1',
+          tedarikciKodu: '',
+        ),
+      );
+
+      final updated = await docRef.get();
+      expect(updated['isim'], 'Yeni');
+
+      await urunService.deleteUrun(docRef.id);
+      final deleted = await docRef.get();
+      expect(deleted.exists, isFalse);
+    });
+
+    test('increaseStockByUrunId() stoku artırmalı', () async {
+      await fakeFirestore.collection('urunler').add({
+        'urun_id': 42,
+        'isim': 'Stoklu',
+        'stok': 10,
+      });
+
+      await urunService.increaseStockByUrunId(42, 5);
+
+      final snap = await fakeFirestore
+          .collection('urunler')
+          .where('urun_id', isEqualTo: 42)
+          .get();
+      expect(snap.docs.first.data()['stok'], 15);
+    });
+
+    test('addUrun() ikinci üründe urun_id artmalı', () async {
+      await fakeFirestore.collection('urunler').add({'urun_id': 5, 'isim': 'A', 'stok': 1});
+      await urunService.addUrun(
+        Urun(
+          urunId: 0,
+          isim: 'B',
+          alisFiyat: 1,
+          satisFiyat: 2,
+          stok: 1,
+          barkod: '',
+          gorsel: '',
+          kategoriId: 'k',
+          urunKodu: '',
+          tedarikciKodu: '',
+        ),
+      );
+
+      final docs = await fakeFirestore.collection('urunler').orderBy('urun_id').get();
+      expect(docs.docs.last.data()['urun_id'], 6);
+    });
+
+    test('getUrunler() stream ürün listesi döndürmeli', () async {
+      await fakeFirestore.collection('urunler').add({'urun_id': 1, 'isim': 'X', 'stok': 1});
+      final list = await urunService.getUrunler().first;
+      expect(list.length, 1);
+    });
   });
 }

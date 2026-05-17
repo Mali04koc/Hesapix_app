@@ -55,5 +55,28 @@ void main() {
       final snapshot = await fakeFirestore.collection('kategoriler').get();
       expect(snapshot.docs.isEmpty, true);
     });
+
+    test('getKategoriler() stream kategori listesi döndürmeli', () async {
+      await fakeFirestore.collection('kategoriler').add({
+        'kategori_id': 1,
+        'isim': 'Elektronik',
+      });
+
+      final list = await kategoriService.getKategoriler().first;
+      expect(list.length, 1);
+      expect(list.first.isim, 'Elektronik');
+    });
+
+    test('addKategori() mevcut max id üzerine eklemeli', () async {
+      await fakeFirestore.collection('kategoriler').add({
+        'kategori_id': 10,
+        'isim': 'Mevcut',
+      });
+
+      await kategoriService.addKategori(Kategori(kategoriId: 0, isim: 'Yeni'));
+
+      final docs = await fakeFirestore.collection('kategoriler').orderBy('kategori_id').get();
+      expect(docs.docs.last.data()['kategori_id'], 11);
+    });
   });
 }
