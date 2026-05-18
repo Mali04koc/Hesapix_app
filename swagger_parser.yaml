@@ -1,0 +1,15 @@
+swagger_parser:
+  # Swagger JSON/YAML dosyasının yolu
+  schema_path: assets/swagger_sample.json
+  
+  # Kodların üretileceği klasör
+  output_directory: lib/services/api
+  
+  # Üretilecek dil ve API istemcisi
+  language: dart
+  client_api: dio
+  
+  # Kod üretim ayarları
+  json_serializable: true
+  root_client: false
+  root_client_name: ApiClient

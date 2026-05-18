@@ -138,6 +138,9 @@ class _CariYonetimiPageState extends State<CariYonetimiPage> {
                   child: StreamBuilder<List<CariHareket>>(
                     stream: _cariService.getHareketler(c.id!),
                     builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(child: Text("Hata oluştu: ${snapshot.error}", textAlign: TextAlign.center));
+                      }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }

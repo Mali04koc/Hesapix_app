@@ -87,11 +87,14 @@ class FirebaseCariService implements ICariService {
     return _db
         .collection('cari_hareketler')
         .where('cari_id', isEqualTo: cariId)
-        .orderBy('tarih', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CariHareket.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => CariHareket.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => b.tarih.compareTo(a.tarih)); // Tarihe göre azalan (descending) sıralama
+          return list;
+        });
   }
 
   // Tüm Cari Hareketlerini getirme (Genel Geçmiş)
