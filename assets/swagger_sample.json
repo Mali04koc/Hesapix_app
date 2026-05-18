@@ -1,0 +1,155 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Hesapix ERP API",
+    "description": "Hesapix ERP sistemi için örnek Swagger API spesifikasyonu."
+  },
+  "host": "api.hesapix.com",
+  "basePath": "/v1",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/urunler": {
+      "get": {
+        "summary": "Tüm ürünleri listele",
+        "operationId": "getUrunler",
+        "responses": {
+          "200": {
+            "description": "Başarılı işlem",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Urun"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Yeni ürün ekle",
+        "operationId": "addUrun",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Eklenecek ürün bilgileri",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Urun"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Ürün başarıyla eklendi",
+            "schema": {
+              "$ref": "#/definitions/Urun"
+            }
+          }
+        }
+      }
+    },
+    "/urunler/{id}": {
+      "get": {
+        "summary": "ID ile ürün getir",
+        "operationId": "getUrunById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı işlem",
+            "schema": {
+              "$ref": "#/definitions/Urun"
+            }
+          }
+        }
+      }
+    },
+    "/cariler": {
+      "get": {
+        "summary": "Tüm cari hesapları listele",
+        "operationId": "getCariler",
+        "responses": {
+          "200": {
+            "description": "Başarılı işlem",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Cari"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Urun": {
+      "type": "object",
+      "required": [
+        "isim",
+        "satisFiyat"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "urunId": {
+          "type": "integer"
+        },
+        "isim": {
+          "type": "string"
+        },
+        "alisFiyat": {
+          "type": "number",
+          "format": "double"
+        },
+        "satisFiyat": {
+          "type": "number",
+          "format": "double"
+        },
+        "stok": {
+          "type": "integer"
+        },
+        "barkod": {
+          "type": "string"
+        },
+        "urunKodu": {
+          "type": "string"
+        }
+      }
+    },
+    "Cari": {
+      "type": "object",
+      "required": [
+        "unvan"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "unvan": {
+          "type": "string"
+        },
+        "telefon": {
+          "type": "string"
+        },
+        "bakiye": {
+          "type": "number",
+          "format": "double"
+        },
+        "cariKodu": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
